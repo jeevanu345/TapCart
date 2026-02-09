@@ -1,8 +1,8 @@
--- Insert default admin user (password: Sm2226#)
+-- Insert default admin user (password: Jeevan%0000)
 -- Note: This uses a simple hash for demo purposes. In production, use proper password hashing.
 INSERT INTO admin_users (email, password_hash) 
-VALUES ('sahanapradeep2207@gmail.com', '1073741824') -- Simple hash of 'Sm2226#'
-ON CONFLICT (email) DO NOTHING;
+VALUES ('jeevanu345@gmail.com', '-1796128564') -- Simple hash of 'Jeevan%0000'
+ON CONFLICT (email) DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
 -- Insert sample products for demo (will be associated with stores later)
 INSERT INTO products (store_id, name, stock, price) VALUES
