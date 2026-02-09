@@ -1,6 +1,6 @@
 -- Update admin user credentials
--- Email: nfctapcart@gmail.com
--- Password: nfc12345
+-- Email: jeevanu345@gmail.com
+-- Password: Jeevan%0000
 
 -- First, ensure the admin_users table exists
 CREATE TABLE IF NOT EXISTS admin_users (
@@ -12,10 +12,13 @@ CREATE TABLE IF NOT EXISTS admin_users (
 
 -- Insert or update the admin user
 INSERT INTO admin_users (email, password_hash) 
-VALUES ('nfctapcart@gmail.com', '1647749480')
+VALUES ('jeevanu345@gmail.com', '-1796128564')
 ON CONFLICT (email) 
 DO UPDATE SET password_hash = EXCLUDED.password_hash;
 
--- Verify the admin user was created/updated
-SELECT email, password_hash, created_at FROM admin_users WHERE email = 'nfctapcart@gmail.com';
+-- Remove old default admin users
+DELETE FROM admin_users
+WHERE email IN ('nfctapcart@gmail.com', 'sahanapradeep2207@gmail.com');
 
+-- Verify the admin user was created/updated
+SELECT email, password_hash, created_at FROM admin_users WHERE email = 'jeevanu345@gmail.com';
