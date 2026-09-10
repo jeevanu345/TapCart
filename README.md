@@ -9,6 +9,8 @@ TapCart: NFC-Based Smart Retail System.
 - Designed an IoT-integrated retail platform enabling "tap-to-shop" purchases and real-time inventory sync across devices.
 - Tech Stack: NFC, IoT, React Native, Node.js, Express.js, Cloud APIs
 
+This is the canonical TapCart repository. The older `tapcart11` repository is retained only as an archived historical copy.
+
 ---
 
 ## Table of Contents
