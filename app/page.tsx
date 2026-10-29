@@ -16,11 +16,11 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-surface-muted border border-border">
-                <Image src="/image.png" alt="TapCart logo" width={24} height={24} />
+                <Image src="/image.png" alt="Taplane logo" width={24} height={24} />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">TapCart</p>
-                <h1 className="text-lg font-semibold text-foreground">TapCart</h1>
+                <p className="text-sm text-muted-foreground">Taplane</p>
+                <h1 className="text-lg font-semibold text-foreground">Taplane</h1>
               </div>
             </div>
             <nav className="hidden items-center gap-3 md:flex">
@@ -48,10 +48,13 @@ export default function HomePage() {
           <section className="mx-auto max-w-7xl px-4 py-14 md:py-20">
             <div className="grid gap-12 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
               <div>
-                <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">TapCart</p>
+                <p className="text-sm font-medium uppercase tracking-[0.2em] text-primary">Taplane</p>
                 <h2 className="mt-4 text-4xl font-semibold text-foreground md:text-5xl">
-                  TapCart: NFC-Based Smart Retail System
+                  Tap. Shop. Go.
                 </h2>
+                <p className="mt-4 text-lg text-muted-foreground">
+                  NFC-powered shopping and smart store management.
+                </p>
                 <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                   <Link href="/store/login" className="w-full sm:w-auto">
                     <Button className="w-full">Store Login</Button>
@@ -248,11 +251,11 @@ export default function HomePage() {
           <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 py-6 md:flex-row">
             <div className="flex items-center gap-3">
               <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-muted border border-border">
-                <Image src="/image.png" alt="TapCart logo" width={18} height={18} />
+                <Image src="/image.png" alt="Taplane logo" width={18} height={18} />
               </div>
-              <span className="text-sm font-medium text-foreground">TapCart</span>
+              <span className="text-sm font-medium text-foreground">Taplane</span>
             </div>
-            <p className="text-xs text-muted-foreground">© 2024 TapCart. All rights reserved.</p>
+            <p className="text-xs text-muted-foreground">© 2024 Taplane. All rights reserved.</p>
           </div>
         </footer>
       </div>

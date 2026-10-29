@@ -71,12 +71,12 @@ export function ApprovalActions({ storeId, email, onStatusChange }: ApprovalActi
 
         if (action === "approve") {
           const subject = "Your Store Account Has Been Approved"
-          const body = `Hello ${storeId},\n\nYour store registration has been approved. You can visit https://tapcart-fr.onrender.com/ and login at the store login page.\n\nStore ID: ${storeId}\nEmail: ${email}\n\nRegards,\nAdmin, TapCart`
+          const body = `Hello ${storeId},\n\nYour store registration has been approved. You can visit https://tapcart-fr.onrender.com/ and login at the store login page.\n\nStore ID: ${storeId}\nEmail: ${email}\n\nRegards,\nAdmin, Taplane`
           openGmailCompose(email, subject, body)
         } else {
           const subject = "Update on Your Store Registration"
           const reasonText = denyReason ? `Reason: ${denyReason}\n\n` : ""
-          const body = `Hello ${storeId},\n\nWe are unable to approve your store registration at this time.\n${reasonText}Regards,\nAdmin, TapCart`
+          const body = `Hello ${storeId},\n\nWe are unable to approve your store registration at this time.\n${reasonText}Regards,\nAdmin, Taplane`
           openGmailCompose(email, subject, body)
         }
       } else {

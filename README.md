@@ -1,15 +1,15 @@
-# TapCart
+# Taplane — Tap. Shop. Go.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-336791?style=flat-square&logo=postgresql)](https://neon.tech/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-CSS-38B2AC?style=flat-square&logo=tailwind-css)](https://tailwindcss.com/)
 
-TapCart: NFC-Based Smart Retail System.
+**NFC-powered shopping and smart store management.**
 - Designed an IoT-integrated retail platform enabling "tap-to-shop" purchases and real-time inventory sync across devices.
 - Tech Stack: NFC, IoT, React Native, Node.js, Express.js, Cloud APIs
 
-This is the canonical TapCart repository. The older `tapcart11` repository is retained only as an archived historical copy.
+This is the canonical Taplane repository. The older `tapcart11` repository is retained only as an archived historical copy.
 
 ---
 
@@ -66,7 +66,7 @@ This is the canonical TapCart repository. The older `tapcart11` repository is re
 ## Project Structure
 
 ```
-tapcart/
+Taplane/
 ├── app/
 │   ├── admin/              # Admin UI pages
 │   ├── store/              # Store UI pages
@@ -105,8 +105,8 @@ tapcart/
 ### 1. Clone the repository
 
 ```bash
-git clone <repository-url>
-cd tapcart
+git clone https://github.com/jeevanu345/Taplane.git
+cd Taplane
 ```
 
 ### 2. Install dependencies
@@ -373,7 +373,7 @@ Cookie-authenticated mutation routes (POST/PATCH/DELETE) enforce **Origin allowl
 
 Example:
 ```env
-ALLOWED_ORIGINS=https://tapcart.com,https://www.tapcart.com
+ALLOWED_ORIGINS=https://your-domain.com,https://www.your-domain.com
 ```
 
 ---

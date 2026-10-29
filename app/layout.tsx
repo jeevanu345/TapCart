@@ -20,8 +20,8 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "TapCart",
-  description: "TapCart: NFC-Based Smart Retail System. Designed an IoT-integrated retail platform enabling tap-to-shop purchases and real-time inventory sync across devices. Tech Stack: NFC, IoT, React Native, Node.js, Express.js, Cloud APIs.",
+  title: "Taplane — Tap. Shop. Go.",
+  description: "Taplane brings NFC-powered shopping, inventory, orders, checkout, and billing together for customers and stores.",
   generator: "v0.app",
 }
 
