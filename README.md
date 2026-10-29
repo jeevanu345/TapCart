@@ -1,4 +1,4 @@
-# Taplane — Tap. Shop. Go.
+# Aislewing — Tap. Shop. Go.
 
 [![Next.js](https://img.shields.io/badge/Next.js-14+-black?style=flat-square&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5+-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org/)
@@ -9,7 +9,7 @@
 - Designed an IoT-integrated retail platform enabling "tap-to-shop" purchases and real-time inventory sync across devices.
 - Tech Stack: NFC, IoT, React Native, Node.js, Express.js, Cloud APIs
 
-This is the canonical Taplane repository. The older `tapcart11` repository is retained only as an archived historical copy.
+This is the canonical Aislewing repository. The older `tapcart11` repository is retained only as an archived historical copy.
 
 ---
 
@@ -66,7 +66,7 @@ This is the canonical Taplane repository. The older `tapcart11` repository is re
 ## Project Structure
 
 ```
-Taplane/
+Aislewing/
 ├── app/
 │   ├── admin/              # Admin UI pages
 │   ├── store/              # Store UI pages
@@ -105,8 +105,8 @@ Taplane/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/jeevanu345/Taplane.git
-cd Taplane
+git clone https://github.com/jeevanu345/Aislewing.git
+cd Aislewing
 ```
 
 ### 2. Install dependencies

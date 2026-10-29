@@ -20,8 +20,8 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: "Taplane — Tap. Shop. Go.",
-  description: "Taplane brings NFC-powered shopping, inventory, orders, checkout, and billing together for customers and stores.",
+  title: "Aislewing — Tap. Shop. Go.",
+  description: "Aislewing brings NFC-powered shopping, inventory, orders, checkout, and billing together for customers and stores.",
   generator: "v0.app",
 }
 
