@@ -43,8 +43,12 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
         [tokenHash(req.cookies[sessionCookie])],
       );
     const csrfToken = await createSession(db, row.id, res, options.production);
-    const store = (await db.query("SELECT id,status FROM store WHERE owner_id=$1", [row.id]))
-      .rows[0];
+    const store = (
+      await db.query(
+        "SELECT s.id,CASE WHEN s.owner_id=$1 THEN 'OWNER' ELSE m.role END AS store_role FROM store s LEFT JOIN store_member m ON m.store_id=s.id AND m.user_id=$1 WHERE s.owner_id=$1 OR m.user_id=$1",
+        [row.id],
+      )
+    ).rows[0];
     res.json({
       user: {
         id: row.id,
@@ -52,6 +56,7 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
         email: row.email,
         role: row.role,
         storeId: store?.id || null,
+        storeRole: store?.store_role || null,
       },
       csrfToken,
       developmentPayments: options.developmentPayments && !options.production,
@@ -86,7 +91,14 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
     });
     const csrfToken = await createSession(db, userId, res, options.production);
     res.status(201).json({
-      user: { id: userId, name: input.name, email: input.email, role: input.role, storeId },
+      user: {
+        id: userId,
+        name: input.name,
+        email: input.email,
+        role: input.role,
+        storeId,
+        storeRole: storeId ? "OWNER" : null,
+      },
       csrfToken,
       developmentPayments: options.developmentPayments && !options.production,
       cardPayments: Boolean(options.cardPayments),
@@ -107,8 +119,8 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
       json(
         (
           await db.query(
-            `SELECT ${fields} FROM store s JOIN app_user u ON u.id=s.owner_id ${admin ? "" : "WHERE s.status='APPROVED' OR s.owner_id=$1"} ORDER BY s.created_at DESC`,
-            admin ? [] : [req.auth?.user.id || null],
+            `SELECT ${fields} FROM store s JOIN app_user u ON u.id=s.owner_id ${admin ? "" : "WHERE s.status='APPROVED' OR s.owner_id=$1 OR s.id=$2"} ORDER BY s.created_at DESC`,
+            admin ? [] : [req.auth?.user.id || null, req.auth?.user.storeId || null],
           )
         ).rows,
       ),
@@ -131,7 +143,7 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
       json(
         (
           await db.query(
-            `SELECT u.id,u.name,u.email,u.role,u.created_at,s.id AS store_id,s.name AS store_name,s.status FROM app_user u LEFT JOIN store s ON s.owner_id=u.id ORDER BY u.created_at DESC`,
+            `SELECT u.id,u.name,u.email,u.role,u.created_at,s.id AS store_id,s.name AS store_name,s.status FROM app_user u LEFT JOIN store_member m ON m.user_id=u.id LEFT JOIN store s ON s.owner_id=u.id OR s.id=m.store_id ORDER BY u.created_at DESC`,
           )
         ).rows,
       ),

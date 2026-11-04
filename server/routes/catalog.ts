@@ -5,6 +5,8 @@ import { v7 as uuid } from "uuid";
 import { json } from "../db.js";
 import { ApiError } from "../errors.js";
 import { requireStore, roles } from "../auth.js";
+import { assertCapacity } from "./saas.js";
+import { event } from "../protocol.js";
 import { idempotent, publicUnit, unitSelect } from "../protocol.js";
 import {
   uuidValue,
@@ -43,6 +45,7 @@ export function registerCatalogRoutes(app: Express, db: Database) {
     const input = productSchema.parse(req.body),
       storeId = await requireStore(db, req.auth!.user, req.body.storeId),
       productId = uuid();
+    await assertCapacity(db, storeId, { products: 1 });
     await db.query(
       "INSERT INTO product(id,store_id,sku,name,description,category,price_cents,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
       [
@@ -119,6 +122,7 @@ export function registerCatalogRoutes(app: Express, db: Database) {
         .parse(req.body),
       current = await product(db, input.productId);
     await requireStore(db, req.auth!.user, current.storeId);
+    await assertCapacity(db, current.storeId, { units: input.quantity });
     const result = await idempotent(
       db,
       `receive:${req.auth!.user.id}`,
@@ -142,6 +146,7 @@ export function registerCatalogRoutes(app: Express, db: Database) {
             ).rows[0],
           );
         }
+        await event(client, "UnitsReceived", input.productId, { count: rows.length });
         return { status: 201, body: { units: json(rows), count: rows.length } };
       },
     );
@@ -181,6 +186,10 @@ export function registerCatalogRoutes(app: Express, db: Database) {
     if (entries.reduce((total, item) => total + item.quantity, 0) > 2000)
       throw new ApiError(400, "Import at most 2,000 physical units at once.");
     const storeId = await requireStore(db, req.auth!.user, req.body.storeId);
+    await assertCapacity(db, storeId, {
+      products: entries.length,
+      units: entries.reduce((total, item) => total + item.quantity, 0),
+    });
     const result = await db.transaction(async (client) => {
       let units = 0;
       for (const entry of entries) {

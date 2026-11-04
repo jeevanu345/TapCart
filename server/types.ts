@@ -5,6 +5,7 @@ export interface User {
   email: string;
   role: Role;
   storeId: string | null;
+  storeRole?: "OWNER" | "MANAGER" | "STAFF" | null;
 }
 export interface Auth {
   user: User;

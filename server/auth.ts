@@ -51,8 +51,8 @@ export function loadAuth(db: Database) {
     if (token && typeof token === "string" && token.length < 200) {
       const row = (
         await db.query(
-          `SELECT s.id AS session_id,s.csrf_token,u.id,u.name,u.email,u.role,st.id AS store_id,st.status AS store_status
-    FROM session s JOIN app_user u ON u.id=s.user_id LEFT JOIN store st ON st.owner_id=u.id WHERE s.token_hash=$1 AND s.expires_at>now()`,
+          `SELECT s.id AS session_id,s.csrf_token,u.id,u.name,u.email,u.role,st.id AS store_id,st.status AS store_status,CASE WHEN st.owner_id=u.id THEN 'OWNER' ELSE m.role END AS store_role
+    FROM session s JOIN app_user u ON u.id=s.user_id LEFT JOIN store_member m ON m.user_id=u.id LEFT JOIN store st ON st.owner_id=u.id OR st.id=m.store_id WHERE s.token_hash=$1 AND s.expires_at>now()`,
           [tokenHash(token)],
         )
       ).rows[0];
@@ -64,6 +64,7 @@ export function loadAuth(db: Database) {
             email: row.email,
             role: row.role,
             storeId: row.store_id,
+            storeRole: row.store_role,
           },
           sessionId: row.session_id,
           csrfToken: row.csrf_token,

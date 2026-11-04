@@ -14,6 +14,7 @@ import { registerIdentityRoutes } from "./routes/identity.js";
 import { registerCatalogRoutes } from "./routes/catalog.js";
 import { registerShoppingRoutes } from "./routes/shopping.js";
 import { registerReportingRoutes } from "./routes/reporting.js";
+import { registerSaasRoutes } from "./routes/saas.js";
 import { createStripeWebhook } from "./stripe.js";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger.js";
@@ -82,7 +83,8 @@ export function createApp(db: Database, options: AppOptions) {
     if (
       req.auth?.user.role === "STORE" &&
       !req.path.startsWith("/auth/") &&
-      !req.path.startsWith("/stores")
+      !req.path.startsWith("/stores") &&
+      !req.path.startsWith("/invites/")
     )
       await requireStore(db, req.auth.user);
     next();
@@ -91,6 +93,7 @@ export function createApp(db: Database, options: AppOptions) {
   registerCatalogRoutes(app, db);
   registerShoppingRoutes(app, db, options);
   registerReportingRoutes(app, db);
+  registerSaasRoutes(app, db, options);
   app.use("/api/ai", requireAuth, createAiRouter(db));
   app.use("/api", (_req, res) => res.status(404).json({ error: "API route not found." }));
   const clientDirectory = resolve(process.cwd(), "dist/client");
