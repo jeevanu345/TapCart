@@ -8,6 +8,19 @@ import {
   YAxis,
 } from "recharts";
 import { date, money, type DailySale } from "./api";
+function SquareDot({ cx = 0, cy = 0 }: { cx?: number; cy?: number }) {
+  return (
+    <rect
+      x={cx - 4}
+      y={cy - 4}
+      width={8}
+      height={8}
+      fill="var(--ink)"
+      stroke="var(--surface)"
+      strokeWidth={2}
+    />
+  );
+}
 export default function RevenueChart({ sales }: { sales: DailySale[] }) {
   return (
     <div
@@ -56,7 +69,6 @@ export default function RevenueChart({ sales }: { sales: DailySale[] }) {
             contentStyle={{
               background: "var(--inv)",
               border: 0,
-              borderRadius: 8,
               color: "var(--inv-ink)",
               fontSize: 12,
               boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
@@ -65,12 +77,12 @@ export default function RevenueChart({ sales }: { sales: DailySale[] }) {
             labelStyle={{ color: "var(--inv-ink)", opacity: 0.75 }}
           />
           <Area
-            type="monotone"
+            type="linear"
             dataKey="revenueCents"
             stroke="var(--ink)"
             strokeWidth={2}
             fill="url(#revenue-fill)"
-            activeDot={{ r: 4, fill: "var(--ink)", stroke: "var(--surface)", strokeWidth: 2 }}
+            activeDot={SquareDot}
             animationDuration={650}
             animationEasing="ease-out"
           />

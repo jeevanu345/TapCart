@@ -224,6 +224,15 @@ export function Modal({
         <Dialog.Overlay className="modal-overlay" />
         <Dialog.Content
           className={`modal ${className}`}
+          onOpenAutoFocus={(event) => {
+            const field = (event.currentTarget as HTMLElement).querySelector<HTMLElement>(
+              "form input:not([readonly]), form select, form textarea",
+            );
+            if (field) {
+              event.preventDefault();
+              field.focus();
+            }
+          }}
           {...(description ? {} : { "aria-describedby": undefined })}
         >
           <div className="modal-head">

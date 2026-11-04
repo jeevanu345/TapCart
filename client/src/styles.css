@@ -4,8 +4,6 @@
   --mono: "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, monospace;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
-  --radius: 10px;
-  --radius-sm: 7px;
   --sidebar: 232px;
   color-scheme: light;
   --bg: #ffffff;
@@ -46,10 +44,12 @@
   --s2: #8a8a8a;
   --s3: #3a3a3a;
 }
+/* Square by rule: every box, control and marker has hard corners. Only the logo keeps its dots. */
 *,
 *::before,
 *::after {
   box-sizing: border-box;
+  border-radius: 0;
 }
 html {
   -webkit-text-size-adjust: 100%;
@@ -128,7 +128,6 @@ small {
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
-  border-radius: 4px;
 }
 ::-webkit-scrollbar {
   width: 10px;
@@ -137,7 +136,6 @@ small {
 ::-webkit-scrollbar-thumb {
   background: var(--line-strong);
   border: 3px solid var(--bg);
-  border-radius: 10px;
 }
 .sr-only {
   position: absolute !important;
@@ -158,7 +156,6 @@ small {
   padding: 8px 12px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: var(--radius-sm);
   transform: translateY(-200%);
 }
 .skip-link:focus {
@@ -226,7 +223,6 @@ small {
   min-height: 36px;
   padding: 0 14px;
   border: 1px solid transparent;
-  border-radius: var(--radius-sm);
   font-weight: 500;
   font-size: 13.5px;
   white-space: nowrap;
@@ -291,7 +287,6 @@ small {
   width: 32px;
   height: 32px;
   flex: none;
-  border-radius: var(--radius-sm);
   color: var(--ink-2);
   transition:
     background-color 140ms ease,
@@ -332,7 +327,6 @@ small {
   align-items: center;
   gap: 6px;
   padding: 2px 8px 2px 7px;
-  border-radius: 99px;
   font-size: 12px;
   font-weight: 500;
   white-space: nowrap;
@@ -342,7 +336,6 @@ small {
 .status > span {
   width: 7px;
   height: 7px;
-  border-radius: 50%;
   flex: none;
 }
 .status.done {
@@ -367,7 +360,6 @@ small {
 }
 .status.alert > span {
   background: var(--inv-ink);
-  border-radius: 1px;
   transform: rotate(45deg);
 }
 /* Forms */
@@ -378,13 +370,23 @@ textarea {
   min-height: 36px;
   padding: 7px 11px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
   background: var(--surface);
   transition: border-color 140ms ease;
 }
 select {
   width: auto;
-  padding-right: 8px;
+  padding-right: 28px;
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--ink-2) 50%),
+    linear-gradient(-45deg, transparent 50%, var(--ink-2) 50%);
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-position:
+    calc(100% - 15px) 50%,
+    calc(100% - 10px) 50%;
+  background-repeat: no-repeat;
 }
 input::placeholder,
 textarea::placeholder {
@@ -402,9 +404,31 @@ input[readonly] {
 }
 input[type="checkbox"],
 input[type="radio"] {
-  accent-color: var(--ink);
+  appearance: none;
+  display: inline-grid;
+  place-items: center;
+  flex: none;
   width: 15px;
   height: 15px;
+  margin: 0;
+  background: var(--surface);
+  border: 1px solid var(--line-strong);
+  cursor: pointer;
+  transition:
+    background-color 120ms ease,
+    border-color 120ms ease;
+}
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  background: var(--ink);
+  border-color: var(--ink);
+}
+input[type="radio"]:checked::after,
+input[type="checkbox"]:checked::after {
+  content: "";
+  width: 7px;
+  height: 7px;
+  background: var(--bg);
 }
 label {
   display: grid;
@@ -467,20 +491,17 @@ label small {
   font-size: 12px;
   font-weight: 500;
   color: var(--ink-2);
-  border-radius: 5px;
 }
 .segmented {
   display: inline-flex;
   padding: 3px;
   gap: 2px;
   background: var(--surface-2);
-  border-radius: 9px;
 }
 .segmented button {
   flex: 1;
   min-height: 30px;
   padding: 0 12px;
-  border-radius: 6px;
   font-size: 13px;
   font-weight: 500;
   color: var(--ink-3);
@@ -508,7 +529,6 @@ label small {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--ink);
-  border-radius: var(--radius-sm);
   font-size: 13px;
   font-weight: 500;
 }
@@ -543,7 +563,6 @@ label small {
 .skeleton {
   display: block;
   height: 14px;
-  border-radius: 4px;
   background: linear-gradient(90deg, var(--surface-2), var(--surface-3), var(--surface-2));
   background-size: 200% 100%;
   animation: shimmer 1.3s linear infinite;
@@ -586,7 +605,6 @@ label small {
   padding: 9px 8px 9px 14px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: var(--radius);
   box-shadow: var(--shadow);
   font-size: 13px;
   font-weight: 500;
@@ -636,7 +654,6 @@ label small {
   padding: 22px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: 14px;
   box-shadow: var(--shadow);
   transform: translate(-50%, -50%);
   animation: modal-in 200ms var(--ease-out);
@@ -667,7 +684,6 @@ label small {
   width: min(290px, 86vw);
   max-height: none;
   height: 100dvh;
-  border-radius: 0 14px 14px 0;
   border-width: 0 1px 0 0;
   transform: none;
   animation: drawer-in 280ms var(--ease-drawer);
@@ -743,7 +759,6 @@ label small {
   width: 100%;
   min-height: 33px;
   padding: 0 9px;
-  border-radius: var(--radius-sm);
   font-size: 13.5px;
   font-weight: 450;
   color: var(--ink-2);
@@ -780,7 +795,6 @@ label small {
   height: 28px;
   background: var(--bg);
   border: 1px solid var(--line);
-  border-radius: 50%;
   opacity: 0;
   transition: opacity 140ms ease;
 }
@@ -837,7 +851,6 @@ label small {
   padding: 0 7px 0 10px;
   margin-right: 4px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
   color: var(--ink-3);
   font-size: 13px;
   text-align: left;
@@ -849,7 +862,6 @@ label small {
 .palette-trigger kbd {
   margin-left: auto;
   padding: 1px 5px;
-  border-radius: 4px;
   background: var(--surface-2);
   font-size: 11px;
 }
@@ -859,7 +871,6 @@ label small {
   width: 34px;
   height: 34px;
   flex: none;
-  border-radius: 50%;
   background: var(--surface-3);
   font-size: 11.5px;
   font-weight: 600;
@@ -885,7 +896,6 @@ label small {
   height: 7px;
   background: var(--ink);
   border: 1.5px solid var(--bg);
-  border-radius: 50%;
   box-sizing: content-box;
 }
 .popover {
@@ -897,7 +907,6 @@ label small {
   padding: 6px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   box-shadow: var(--shadow);
   transform-origin: top right;
   animation: pop 150ms var(--ease-out);
@@ -915,7 +924,6 @@ label small {
   gap: 1px;
   width: 100%;
   padding: 8px 10px;
-  border-radius: 6px;
   text-align: left;
   font-size: 13px;
 }
@@ -961,7 +969,6 @@ label small {
   transform: translateX(-50%);
   background: var(--surface);
   border: 1px solid var(--line-strong);
-  border-radius: 14px;
   box-shadow: var(--shadow);
   overflow: hidden;
 }
@@ -993,7 +1000,6 @@ label small {
   width: 100%;
   min-height: 36px;
   padding: 0 10px;
-  border-radius: 6px;
   text-align: left;
   font-size: 13.5px;
 }
@@ -1056,7 +1062,6 @@ label small {
   padding: 18px;
   background: var(--surface);
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   min-width: 0;
 }
 .panel-head {
@@ -1107,7 +1112,6 @@ label small {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   overflow: hidden;
 }
 .metric-strip.three {
@@ -1142,7 +1146,6 @@ label small {
   padding: 12px 16px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: var(--radius);
   transition: background-color 140ms ease;
 }
 .next-action strong {
@@ -1165,7 +1168,6 @@ label small {
 .setup {
   padding: 14px 18px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius);
 }
 .setup-head {
   display: flex;
@@ -1205,7 +1207,6 @@ label small {
   width: 15px;
   height: 15px;
   border: 1.5px solid var(--line-strong);
-  border-radius: 50%;
 }
 .setup-steps [data-done="true"] span {
   background: var(--ink);
@@ -1230,7 +1231,6 @@ label small {
   display: block;
   flex: 0 0 0;
   min-width: 0;
-  border-radius: 2px;
   transition: flex-grow 500ms var(--ease-out);
 }
 .s1 {
@@ -1265,7 +1265,6 @@ label small {
 .stat-list dt i {
   width: 8px;
   height: 8px;
-  border-radius: 2px;
 }
 .stat-list dd {
   font-weight: 500;
@@ -1292,7 +1291,6 @@ label small {
   display: block;
   height: 6px;
   background: var(--surface-2);
-  border-radius: 3px;
   overflow: hidden;
 }
 .bars b,
@@ -1300,7 +1298,6 @@ label small {
   display: block;
   height: 100%;
   background: var(--ink);
-  border-radius: 3px;
   transform-origin: left;
   animation: grow 600ms var(--ease-out);
   transition: transform 400ms var(--ease-out);
@@ -1446,7 +1443,6 @@ strong {
   width: 100%;
   aspect-ratio: 1;
   background: var(--surface-2);
-  border-radius: var(--radius-sm);
   overflow: hidden;
   color: var(--ink-3);
 }
@@ -1514,7 +1510,6 @@ strong {
   width: 9px;
   height: 9px;
   margin-top: 5px;
-  border-radius: 50%;
   background: var(--ink);
   z-index: 1;
 }
@@ -1562,7 +1557,6 @@ strong {
   height: 9px;
   border: 1.5px solid var(--line-strong);
   background: var(--surface);
-  border-radius: 50%;
   z-index: 1;
 }
 .order-timeline li:not(:last-child)::before {
@@ -1578,7 +1572,6 @@ strong {
   border-color: var(--ink);
 }
 .order-timeline li[data-branch="true"] > span {
-  border-radius: 1px;
   transform: rotate(45deg);
 }
 .order-timeline strong {
@@ -1606,7 +1599,6 @@ strong {
   gap: 9px;
   padding: 10px 12px;
   background: var(--surface-2);
-  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 .inline-info svg {
@@ -1669,7 +1661,6 @@ strong {
   gap: 12px;
   padding: 14px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
 }
 .return-form h3 {
   font-size: 14px;
@@ -1796,7 +1787,6 @@ strong {
   gap: 8px;
   padding: 8px 10px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
   text-align: left;
   font-size: 13px;
   transition: border-color 140ms ease;
@@ -1817,7 +1807,6 @@ strong {
   max-width: 85%;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 10px 10px 2px 10px;
 }
 .chat-entry.user small {
   color: inherit;
@@ -1845,7 +1834,6 @@ strong {
   gap: 12px;
   padding: 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
   transition: border-color 140ms ease;
 }
 .recommendation-grid a:hover {
@@ -1964,7 +1952,6 @@ strong {
   height: 20px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 50%;
   font-size: 11px;
   font-weight: 600;
 }
@@ -2052,7 +2039,6 @@ strong {
   margin-top: 12px;
   padding: 10px 12px;
   border: 1px solid var(--line);
-  border-radius: var(--radius-sm);
   font-size: 12.5px;
 }
 .demo-credentials summary {
@@ -2106,7 +2092,6 @@ strong {
   padding: 0 4px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 8px;
   font-size: 10px;
   font-weight: 600;
   line-height: 16px;
@@ -2170,11 +2155,9 @@ strong {
 .shop-product-art {
   position: relative;
   margin-bottom: 7px;
-  border-radius: var(--radius);
   overflow: hidden;
 }
 .shop-product-art .product-art {
-  border-radius: 0;
   aspect-ratio: 4 / 5;
 }
 .shop-product-art img {
@@ -2199,7 +2182,6 @@ strong {
   height: 30px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 50%;
   opacity: 0;
   transform: translateY(4px);
   transition:
@@ -2213,7 +2195,6 @@ strong {
   padding: 2px 8px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 99px;
   font-size: 11.5px;
   font-weight: 500;
 }
@@ -2242,7 +2223,6 @@ strong {
   gap: 12px;
   padding: 16px;
   border: 1px solid var(--line);
-  border-radius: var(--radius);
   scroll-margin-top: 72px;
 }
 .basket-heading {
@@ -2302,7 +2282,6 @@ strong {
   padding: 0 6px;
   background: var(--inv);
   color: var(--inv-ink);
-  border-radius: 99px;
   animation: breathe 1.4s ease-in-out infinite;
 }
 @keyframes breathe {
@@ -2361,7 +2340,6 @@ strong {
   gap: 10px;
   padding: 26px;
   background: var(--surface-2);
-  border-radius: var(--radius);
   overflow: hidden;
   font-size: 13px;
   color: var(--ink-2);
@@ -2373,7 +2351,6 @@ strong {
   height: 44px;
   margin-top: -6px;
   border: 1.5px solid var(--ink);
-  border-radius: 50%;
   opacity: 0;
 }
 .scan-target[data-reading="true"] i {
@@ -2445,7 +2422,6 @@ strong {
   animation: rise 320ms var(--ease-out);
 }
 .scan-product-art .product-art {
-  border-radius: var(--radius);
 }
 .scan-product-info {
   display: grid;
@@ -2508,7 +2484,6 @@ strong {
   gap: 10px;
   padding: 10px 12px;
   border: 1px solid var(--line-strong);
-  border-radius: var(--radius-sm);
   cursor: pointer;
   transition: border-color 140ms ease;
 }
@@ -2530,7 +2505,6 @@ strong {
   margin-top: 12px;
   padding: 12px;
   border: 1px dashed var(--line-strong);
-  border-radius: var(--radius-sm);
   font-size: 13px;
 }
 /* Receipt */
@@ -2659,7 +2633,7 @@ strong {
   gap: 24px;
   height: 64px;
   padding: 0 clamp(16px, 4vw, 56px);
-  background: rgb(255 255 255 / 0.86);
+  background: rgb(255 255 255 / 0.97);
   backdrop-filter: blur(12px);
 }
 .lp-nav .logo {
@@ -2732,7 +2706,6 @@ strong {
   padding: 22px;
   background: #ffffff;
   border: 1px solid var(--line-strong);
-  border-radius: 16px;
   box-shadow:
     0 2px 4px rgb(0 0 0 / 0.04),
     0 28px 60px rgb(0 0 0 / 0.1);
@@ -2791,7 +2764,6 @@ strong {
 }
 .ticket-rail span {
   height: 4px;
-  border-radius: 2px;
   background: var(--surface-3);
   transition: background-color 400ms ease;
 }
@@ -2892,7 +2864,6 @@ strong {
   width: 64px;
   height: 64px;
   border: 1px dotted var(--ink-3);
-  border-radius: 50%;
   transform: translate(-50%, -50%);
   transition:
     background-color 200ms ease 700ms,
@@ -2910,7 +2881,6 @@ strong {
   height: 12px;
   margin: -6px;
   background: #fafafa;
-  border-radius: 50%;
   transform: translate(var(--x), var(--y));
 }
 .race[data-phase="race"] .racer {
@@ -2975,7 +2945,6 @@ strong {
   grid-template-columns: repeat(3, minmax(0, 1fr));
   margin-top: clamp(24px, 4vh, 48px);
   border: 1px solid var(--line-strong);
-  border-radius: 16px;
   overflow: hidden;
 }
 .lp-plans article {
@@ -3180,7 +3149,6 @@ strong {
     left: 0;
     width: 100%;
     max-height: 92dvh;
-    border-radius: 16px 16px 0 0;
     border-width: 1px 0 0;
     transform: none;
     animation: sheet-in 280ms var(--ease-drawer);

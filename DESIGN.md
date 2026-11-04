@@ -1,6 +1,6 @@
 # TapCart design system
 
-Strictly white to black. Every token is a neutral; there is no accent hue. Tokens live in `client/src/styles.css`, primitives in `client/src/ui.tsx`.
+Strictly white to black, with square corners. Every token is a neutral; there is no accent hue. Every box, control, status marker and chart mark has hard corners; only the logo keeps its round dots. Tokens live in `client/src/styles.css`, primitives in `client/src/ui.tsx`.
 
 - **Themes:** white and black, chosen by toggle or system preference, stored in `tapcart.theme`, applied before paint by `public/theme.js`. Switching runs a circle wipe from the toggle with the View Transitions API.
 - **Logo:** the dotted triangle from `public/image.png`, redrawn as `LogoMark` and `public/favicon.svg`. Loading states march its dots.
