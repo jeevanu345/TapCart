@@ -1,0 +1,5 @@
+# TapCart
+
+> Retail software for stores that sell physical items by tap. Each physical unit has its own NFC or QR link, and a PostgreSQL protocol keeps one owner at a time and one sale per unit.
+
+Public pages: `/` (product and pricing), `/login`, `/register`. Store, admin, order and unit pages require an account or a physical tag link.

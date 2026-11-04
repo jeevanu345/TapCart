@@ -116,3 +116,76 @@ test("customer registration and local accessibility checks", async ({ page }) =>
   const store = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
   expect(store.violations).toEqual([]);
 });
+
+test("landing page runs white to black and leads into registration", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Exactly once");
+  const tones = await page.evaluate(() => ({
+    top: getComputedStyle(document.querySelector(".lp")!).backgroundColor,
+    bottom: getComputedStyle(document.querySelector(".lp-black")!).backgroundColor,
+  }));
+  expect(tones).toEqual({ top: "rgb(255, 255, 255)", bottom: "rgb(0, 0, 0)" });
+  await page.locator("#protocol").scrollIntoViewIfNeeded();
+  await expect(page.locator(".race-log p")).toContainText("1 row updated", { timeout: 5000 });
+  const scan = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(scan.violations).toEqual([]);
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  await page.getByRole("link", { name: "Start free" }).first().click();
+  await expect(page).toHaveURL(/register/);
+  expect(errors).toEqual([]);
+});
+
+test("workspace: palette, theme, reports, desk, labels and a teammate invitation", async ({
+  browser,
+}) => {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await signIn(page, "store@tapcart.local");
+  await expect(page.locator(".metric-strip")).toBeVisible();
+  await page.keyboard.press("ControlOrMeta+k");
+  await page.getByRole("combobox").fill("reports");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/store\/reports/);
+  await page.getByRole("button", { name: "7d" }).click();
+  await expect(page.getByText("Last 7 days, net of returns")).toBeVisible();
+  await page.getByRole("button", { name: "Switch to black theme" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await expect(page.locator(".metric-strip")).toBeVisible();
+  await page.waitForTimeout(800);
+  const dark = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa"]).analyze();
+  expect(dark.violations).toEqual([]);
+  await page.getByRole("button", { name: "Switch to white theme" }).click();
+  await page.getByRole("link", { name: "Desk", exact: true }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Desk" })).toBeVisible();
+  await page.getByRole("link", { name: "Tag studio" }).click();
+  await page.getByRole("checkbox", { name: "Select all visible units" }).check();
+  await page.getByRole("button", { name: "Print QR labels" }).click();
+  await expect(page).toHaveURL(/labels/);
+  await expect(page.getByRole("img", { name: /QR code for/ }).first()).toBeVisible();
+  await page.goto("/store/settings?tab=team");
+  await page.getByRole("button", { name: "Invite teammate" }).click();
+  await page.getByRole("button", { name: "Create invitation link" }).click();
+  const link = await page.getByLabel("Invitation link").inputValue();
+  const teammate = await browser.newContext();
+  const invited = await teammate.newPage();
+  await invited.goto(link);
+  await invited.getByLabel("Your name").fill("Riya Staff");
+  await invited.getByLabel("Email address").fill("riya@tapcart.local");
+  await invited.getByLabel("Password", { exact: true }).fill("ARiyaStaffPass123!");
+  await invited.getByRole("button", { name: "Join store" }).click();
+  await expect(invited).toHaveURL(/store\/overview/);
+  await invited.goto("/store/settings?tab=store");
+  await expect(invited.getByText("Only managers can change these.")).toBeVisible();
+  await invited.goto(link);
+  await expect(invited).toHaveURL(/store\/overview/);
+  await teammate.close();
+  expect(errors).toEqual([]);
+  await context.close();
+});

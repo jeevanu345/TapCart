@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /store/
+Disallow: /admin/
+Disallow: /customer
+Disallow: /receipt/
+Disallow: /invite/
+Disallow: /labels
+Disallow: /u/

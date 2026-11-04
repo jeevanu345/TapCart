@@ -16,14 +16,14 @@ export default function RevenueChart({ sales }: { sales: DailySale[] }) {
       aria-label={`Revenue over ${sales.length} days, totaling ${money(sales.reduce((sum, row) => sum + row.revenueCents, 0))}`}
     >
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={sales} margin={{ top: 15, right: 16, left: -16, bottom: 0 }}>
+        <AreaChart data={sales} margin={{ top: 12, right: 8, left: -12, bottom: 0 }}>
           <defs>
             <linearGradient id="revenue-fill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#417a5f" stopOpacity={0.17} />
-              <stop offset="100%" stopColor="#417a5f" stopOpacity={0.01} />
+              <stop offset="0%" stopColor="var(--ink)" stopOpacity={0.14} />
+              <stop offset="100%" stopColor="var(--ink)" stopOpacity={0} />
             </linearGradient>
           </defs>
-          <CartesianGrid vertical={false} stroke="#eceee8" strokeDasharray="4 4" />
+          <CartesianGrid vertical={false} stroke="var(--line)" />
           <XAxis
             dataKey="date"
             tickFormatter={(value) =>
@@ -32,32 +32,47 @@ export default function RevenueChart({ sales }: { sales: DailySale[] }) {
                 month: "short",
               })
             }
-            tick={{ fill: "#8b918a", fontSize: 11 }}
+            tick={{ fill: "var(--ink-3)", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
-            minTickGap={35}
+            minTickGap={40}
           />
           <YAxis
-            tickFormatter={(value) =>
-              `₹${Number(value) >= 100000 ? `${Math.round(Number(value) / 100000)}k` : Math.round(Number(value) / 100)}`
-            }
-            tick={{ fill: "#8b918a", fontSize: 11 }}
+            tickFormatter={(value) => {
+              const rupees = Number(value) / 100;
+              return rupees >= 1000
+                ? `₹${Number((rupees / 1000).toFixed(1))}k`
+                : `₹${Math.round(rupees)}`;
+            }}
+            tick={{ fill: "var(--ink-3)", fontSize: 11 }}
             tickLine={false}
             axisLine={false}
+            width={56}
           />
           <Tooltip
             formatter={(value) => [money(Number(value)), "Revenue"]}
             labelFormatter={(value) => date(String(value))}
-            contentStyle={{ borderRadius: 10, border: "1px solid #e3e6de", fontSize: 12 }}
-            cursor={{ stroke: "#b2c6b7" }}
+            cursor={{ stroke: "var(--ink-3)", strokeWidth: 1 }}
+            contentStyle={{
+              background: "var(--inv)",
+              border: 0,
+              borderRadius: 8,
+              color: "var(--inv-ink)",
+              fontSize: 12,
+              boxShadow: "0 8px 24px rgb(0 0 0 / 0.18)",
+            }}
+            itemStyle={{ color: "var(--inv-ink)" }}
+            labelStyle={{ color: "var(--inv-ink)", opacity: 0.75 }}
           />
           <Area
             type="monotone"
             dataKey="revenueCents"
-            stroke="#3d755a"
-            strokeWidth={2.5}
+            stroke="var(--ink)"
+            strokeWidth={2}
             fill="url(#revenue-fill)"
-            isAnimationActive={false}
+            activeDot={{ r: 4, fill: "var(--ink)", stroke: "var(--surface)", strokeWidth: 2 }}
+            animationDuration={650}
+            animationEasing="ease-out"
           />
         </AreaChart>
       </ResponsiveContainer>

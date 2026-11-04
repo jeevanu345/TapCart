@@ -6,7 +6,6 @@ import {
   ArrowUpRight,
   Clock3,
   CreditCard,
-  Leaf,
   LogOut,
   Radio,
   RefreshCw,
@@ -39,6 +38,7 @@ import {
   Modal,
   ProductArt,
   Status,
+  ThemeToggle,
   useNotify,
 } from "./ui";
 import { homeFor, useAuth } from "./App";
@@ -74,11 +74,11 @@ function ShopperHeader({ count = 0 }: { count?: number }) {
       <Link to="/customer">
         <Logo />
       </Link>
-      <span className="shopper-tagline">A little tap. A better shop.</span>
       <div className="actions">
+        <ThemeToggle />
         {user ? (
           <>
-            <span className="shopper-name">Hi, {user.name.split(" ")[0]}</span>
+            <span className="shopper-name">{user.name.split(" ")[0]}</span>
             {user.role !== "CUSTOMER" && (
               <Link className="text-button" to={homeFor(user)}>
                 Workspace
@@ -131,6 +131,7 @@ export function Shopper() {
   const [busy, setBusy] = useState(false);
   const [checkout, setCheckout] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [allOrders, setAllOrders] = useState(false);
   const returnedOrderId = searchParams.get("order");
   useEffect(() => {
     if (!returnedOrderId || !history.data) return;
@@ -176,63 +177,18 @@ export function Shopper() {
       <main className="shopper-main">
         <div className="shopper-welcome">
           <div>
-            <span className="eyebrow">
-              <span className="live-dot" />
-              YOUR NEIGHBORHOOD, CONNECTED
-            </span>
-            <h1>
-              Good finds.
-              <br />
-              One little tap away.
-            </h1>
-            <p>
-              Pick something you love. Tap its NFC tag.
-              <br />A simpler kind of shopping starts here.
-            </p>
-            <Button onClick={() => setScanModal(true)}>
-              <Radio size={18} />
-              Open a product tag
-              <ArrowUpRight size={16} />
-            </Button>
+            <h1>Tap the tag on anything you want.</h1>
+            <p>It's held for you the moment you tap, while you keep shopping.</p>
           </div>
-          <div className="shopper-illustration" aria-hidden="true">
-            <div className="shopper-orbit" />
-            <div className="shopping-bag">
-              <span className="bag-handle" />
-              <Radio size={69} strokeWidth={1.1} />
-              <span>
-                GOOD THINGS
-                <br />
-                ARE IN STORE.
-              </span>
-            </div>
-            <span className="shopping-sticker">
-              <Leaf size={18} />
-              Picked by you.
-            </span>
-          </div>
-        </div>
-        <div className="shopper-benefits">
-          <span>
-            <Radio size={17} />
-            Tap a tagged item
-          </span>
-          <span>
-            <ShoppingBag size={17} />
-            Make it yours
-          </span>
-          <span>
-            <ShieldCheck size={17} />
-            Checkout with confidence
-          </span>
+          <Button onClick={() => setScanModal(true)}>
+            <Radio size={16} />
+            Open a product tag
+          </Button>
         </div>
         <div className="shopping-layout">
           <section className="shopper-catalog">
             <div className="catalog-heading">
-              <div>
-                <span className="eyebrow">A LITTLE BROWSE</span>
-                <h2>Find your next favorite.</h2>
-              </div>
+              <h2>Browse</h2>
               <select
                 value={storeId}
                 aria-label="Browse store"
@@ -252,12 +208,12 @@ export function Shopper() {
               <Search size={17} />
               <input
                 aria-label="Search the catalog"
-                placeholder="Something in mind?"
+                placeholder="Search products"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
               />
             </div>
-            {products.loading ? (
+            {products.loading && !products.data ? (
               <Loading />
             ) : products.error ? (
               <ErrorState error={products.error} retry={products.reload} />
@@ -286,15 +242,13 @@ export function Shopper() {
                       <strong>{money(product.priceCents)}</strong>
                     </span>
                     <span className="shop-product-detail">
-                      {product.available > 0
-                        ? "Find it in store · tap to shop"
-                        : "Something good is worth waiting for"}
+                      {product.available > 0 ? `${product.available} in store` : "Out of stock"}
                     </span>
                   </button>
                 ))}
               </div>
             ) : (
-              <Empty title="A little room for discovery" detail="Try another store or search." />
+              <Empty title="No products found" detail="Try another store or search." />
             )}
           </section>
           <aside className="basket-panel" id="basket">
@@ -305,11 +259,11 @@ export function Shopper() {
             </div>
             {user?.role !== "CUSTOMER" ? (
               <Empty
-                title="Make yourself at home."
+                title="Sign in to hold items"
                 detail={
                   user
                     ? "Use a shopper account to reserve items and checkout."
-                    : "Sign in to keep your basket connected across your visit."
+                    : "Your basket follows you across your visit."
                 }
               >
                 <Link to="/login?returnTo=%2Fcustomer" className="button secondary">
@@ -361,10 +315,7 @@ export function Shopper() {
                   <span>Subtotal</span>
                   <strong>{money(total)}</strong>
                 </div>
-                <p className="basket-note">
-                  <ShieldCheck size={14} />
-                  Held just for you, until the reservation expires.
-                </p>
+                <p className="basket-note">Held only for you until the timer ends.</p>
                 {error && <ErrorState error={error} />}
                 <Button className="full-width" onClick={() => setCheckout(true)}>
                   Ready to checkout
@@ -377,8 +328,8 @@ export function Shopper() {
               </>
             ) : (
               <Empty
-                title="A little empty. For now."
-                detail="Tap a product’s NFC tag to reserve the exact item you’re holding."
+                title="Your basket is empty"
+                detail="Tap a product's tag to hold the exact item in your hand."
               >
                 <Button variant="secondary" onClick={() => setScanModal(true)}>
                   <Radio size={16} />
@@ -386,19 +337,12 @@ export function Shopper() {
                 </Button>
               </Empty>
             )}
-            <div className="basket-bottom">
-              <Leaf size={15} />
-              Less waiting. More living.
-            </div>
           </aside>
         </div>
         {user?.role === "CUSTOMER" && (
           <section className="shopper-orders">
             <div className="catalog-heading">
-              <div>
-                <span className="eyebrow">YOURS TO KEEP</span>
-                <h2>Your recent orders.</h2>
-              </div>
+              <h2>Your orders</h2>
               <Button variant="ghost" onClick={history.reload} aria-label="Refresh your orders">
                 <RefreshCw size={16} />
               </Button>
@@ -407,11 +351,8 @@ export function Shopper() {
               <ErrorState error={history.error} retry={history.reload} />
             ) : history.data?.length ? (
               <div className="shopper-order-list">
-                {history.data.map((order) => (
+                {history.data.slice(0, allOrders ? undefined : 5).map((order) => (
                   <button key={order.id} onClick={() => setSelectedOrder(order)}>
-                    <span className="line-icon">
-                      <ShoppingBag size={20} />
-                    </span>
                     <span>
                       <strong>{shortId(order.id)}</strong>
                       <small>
@@ -423,17 +364,18 @@ export function Shopper() {
                     <ArrowRight size={17} />
                   </button>
                 ))}
+                {history.data.length > 5 && (
+                  <Button variant="ghost" onClick={() => setAllOrders(!allOrders)}>
+                    {allOrders ? "Show fewer" : `Show all ${history.data.length} orders`}
+                  </Button>
+                )}
               </div>
             ) : (
-              <p className="muted">The first of many good finds is just ahead.</p>
+              <p className="muted">Your orders will appear here.</p>
             )}
           </section>
         )}
       </main>
-      <footer className="shopper-footer">
-        <Logo />
-        <span>Thoughtful shopping. Happier neighborhoods.</span>
-      </footer>
       {scanModal && <ScanInput onClose={() => setScanModal(false)} />}{" "}
       {preview && <ProductPreview product={preview} onClose={() => setPreview(null)} />}{" "}
       {checkout && (
@@ -545,15 +487,14 @@ function ScanInput({ onClose }: { onClose: () => void }) {
   }
   return (
     <Modal
-      title="One little tap starts here."
-      description="Tap the product’s NFC tag with your phone, or open its unique link below."
+      title="Open a product tag"
+      description="Tap the tag with your phone, or paste its link below."
       onClose={onClose}
     >
-      <div className="scan-target">
-        <Radio size={45} strokeWidth={1.3} />
-        <span>
-          {reading ? "Hold your phone near the tag…" : "A connection, waiting to happen."}
-        </span>
+      <div className="scan-target" data-reading={reading}>
+        <i aria-hidden="true" />
+        <Radio size={32} strokeWidth={1.4} />
+        <span>{reading ? "Hold your phone near the tag…" : "Ready when you are"}</span>
       </div>
       {Reader ? (
         <Button busy={reading} className="full-width" onClick={scan}>
@@ -601,16 +542,14 @@ function ProductPreview({ product, onClose }: { product: Product; onClose: () =>
         <strong>{money(product.priceCents)}</strong>
         <Status value={product.available ? "IN_STOCK" : "OUT_OF_STOCK"} />
       </div>
-      <p className="product-description">
-        {product.description || "A good find, waiting to be yours."}
-      </p>
+      <p className="product-description">{product.description}</p>
       <div className="inline-info">
         <Radio size={19} />
         In store? Tap the NFC tag on the exact item you’re holding to reserve it.
       </div>
       {units.data?.some((unit) => unit.status === "AVAILABLE") ? (
         <div className="preview-units">
-          <span className="eyebrow">AVAILABLE PHYSICAL UNITS</span>
+          <h3>Available units</h3>
           {units.data
             .filter((unit) => unit.status === "AVAILABLE")
             .slice(0, 4)
@@ -668,7 +607,7 @@ export function Scan() {
       <main className="scan-page">
         <Link className="text-button" to="/customer">
           <ArrowLeft size={16} />
-          Back to the store
+          Back to browsing
         </Link>
         {unit.loading ? (
           <Loading />
@@ -685,12 +624,9 @@ export function Scan() {
                 name={unit.data.name}
                 imageUrl={unit.data.imageUrl}
               />
-              <span>
-                <Radio size={15} />A little tap brought you here.
-              </span>
             </div>
             <div className="scan-product-info">
-              <span className="eyebrow">{unit.data.category}</span>
+              <small className="scan-category">{unit.data.category}</small>
               <h1>{unit.data.name}</h1>
               <strong className="scan-price">{money(unit.data.priceCents)}</strong>
               <div className="scan-unit-meta">
@@ -698,8 +634,8 @@ export function Scan() {
                 <span>{unit.data.staffCode}</span>
               </div>
               <p>
-                This link belongs to one physical item. Reserve the exact unit you’re holding, then
-                add a little more good to your day.
+                This link belongs to one physical item. Reserve it to hold this exact unit while you
+                shop.
               </p>
               {error && <ErrorState error={error} />}{" "}
               {!user ? (
@@ -727,7 +663,7 @@ export function Scan() {
                   <div className="inline-info">
                     <Clock3 size={18} />
                     {unit.data.status === "SOLD"
-                      ? "This exact unit has already found a home."
+                      ? "This exact unit has been sold."
                       : "This exact unit is currently held in a basket. Check your basket or try another tagged item."}
                   </div>
                   <Link to="/customer#basket" className="button secondary">
@@ -793,8 +729,8 @@ function Checkout({
   }
   return (
     <Modal
-      title="A good find. Almost yours."
-      description="Review your basket and choose how you’d like to pay."
+      title="Checkout"
+      description="Review your items and choose how to pay."
       onClose={onClose}
     >
       <form className="form-stack" onSubmit={submit}>
@@ -819,7 +755,7 @@ function Checkout({
               checked={method === "DESK"}
               onChange={() => setMethod("DESK")}
             />
-            <StoreIcon size={22} />
+            <StoreIcon size={18} />
             <span>
               <strong>Pay at the desk</strong>
               <small>Your store team confirms payment after you pay.</small>
@@ -834,7 +770,7 @@ function Checkout({
                 checked={method === "CARD"}
                 onChange={() => setMethod("CARD")}
               />
-              <CreditCard size={22} />
+              <CreditCard size={18} />
               <span>
                 <strong>Pay securely by card</strong>
                 <small>Continue to our payment provider after placing the order.</small>
@@ -850,7 +786,7 @@ function Checkout({
                 checked={method === "DEVELOPMENT"}
                 onChange={() => setMethod("DEVELOPMENT")}
               />
-              <CreditCard size={22} />
+              <CreditCard size={18} />
               <span>
                 <strong>Development simulator</strong>
                 <small>Test only. No money is charged.</small>
@@ -952,7 +888,7 @@ function LiveOrder({ id }: { id: string }) {
       )}
       {order.data.paymentMethod === "DEVELOPMENT" && order.data.status === "PAYMENT_PENDING" && (
         <div className="dev-payment">
-          <span className="eyebrow">DEVELOPMENT SIMULATOR · NO REAL CHARGE</span>
+          <strong>Development simulator. No real charge.</strong>
           <p>Choose a result to exercise the payment flow.</p>
           <div className="actions">
             <Button busy={busy} onClick={() => simulate("SUCCEEDED")}>

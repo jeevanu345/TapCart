@@ -1,22 +1,25 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
+  ArrowDown,
   ArrowRight,
+  ArrowUp,
   ArrowUpRight,
-  Check,
   Copy,
   Download,
   FileSpreadsheet,
-  Package,
+  History,
   Pencil,
   Plus,
-  Radio,
+  Printer,
   Search,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
+import QRCode from "qrcode";
 import {
+  dateTime,
   downloadCSV,
   message,
   money,
@@ -25,7 +28,9 @@ import {
   write,
   type Product,
   type Unit,
+  type Workspace,
 } from "./api";
+import { eventLabel } from "./reports";
 import {
   Button,
   Empty,
@@ -38,12 +43,16 @@ import {
   Status,
   useNotify,
 } from "./ui";
+type SortKey = "name" | "priceCents" | "available" | "reserved";
 export function Inventory() {
   const products = useData<Product[]>("/products");
   const [params, setParams] = useSearchParams();
   const [query, setQuery] = useState(params.get("q") || "");
   const [category, setCategory] = useState("all");
-  const [stock, setStock] = useState("all");
+  const [stock, setStock] = useState(params.get("stock") || "all");
+  const [sort, setSort] = useState<{ key: SortKey; up: boolean }>({ key: "name", up: true });
+  const workspace = useData<Workspace>("/workspace");
+  const threshold = workspace.data?.store.lowStockThreshold ?? 5;
   const [editing, setEditing] = useState<Product | "new" | null>(params.has("add") ? "new" : null);
   const [receiving, setReceiving] = useState<Product | null>(null);
   const [deleting, setDeleting] = useState<Product | null>(null);
@@ -67,10 +76,26 @@ export function Inventory() {
       (category === "all" || product.category === category) &&
       (stock === "all" ||
         (stock === "low"
-          ? product.available > 0 && product.available < 5
+          ? product.available > 0 && product.available <= threshold
           : stock === "out"
             ? product.available === 0
-            : product.available >= 5)),
+            : product.available > threshold)),
+  );
+  const direction = sort.up ? 1 : -1;
+  filtered.sort((a, b) =>
+    sort.key === "name"
+      ? a.name.localeCompare(b.name) * direction
+      : (a[sort.key] - b[sort.key]) * direction,
+  );
+  const sortBy = (key: SortKey) => () =>
+    setSort((value) => ({ key, up: value.key === key ? !value.up : key === "name" }));
+  const header = (key: SortKey, label: string) => (
+    <th aria-sort={sort.key === key ? (sort.up ? "ascending" : "descending") : "none"}>
+      <button className="sort-button" onClick={sortBy(key)}>
+        {label}
+        {sort.key === key && (sort.up ? <ArrowUp size={12} /> : <ArrowDown size={12} />)}
+      </button>
+    </th>
   );
   function close() {
     setEditing(null);
@@ -215,9 +240,8 @@ export function Inventory() {
   return (
     <>
       <PageTitle
-        eyebrow="YOUR SHELVES, CONNECTED"
-        title="A place for every product."
-        description="Keep your catalog organized and your shelves ready for what’s next."
+        title="Inventory"
+        description="Products, and every physical unit behind them."
         actions={
           <>
             <Button variant="secondary" onClick={() => fileInput.current?.click()} busy={importing}>
@@ -248,21 +272,18 @@ export function Inventory() {
           if (file) void importCSV(file);
         }}
       />
-      <div className="summary-strip">
+      <div className="metric-strip three">
         <div>
-          <Package size={20} />
-          <strong>{list.length}</strong>
           <span>Products</span>
+          <strong>{list.length}</strong>
         </div>
         <div>
-          <Radio size={20} />
-          <strong>{list.reduce((sum, product) => sum + product.available, 0)}</strong>
           <span>Available units</span>
+          <strong>{list.reduce((sum, product) => sum + product.available, 0)}</strong>
         </div>
         <div>
-          <span className="stock-dot" />
-          <strong>{list.filter((product) => product.available < 5).length}</strong>
-          <span>Need a stock check</span>
+          <span>At or below {threshold} units</span>
+          <strong>{list.filter((product) => product.available <= threshold).length}</strong>
         </div>
       </div>
       {error && !editing && !receiving && !deleting && <ErrorState error={error} />}
@@ -311,7 +332,7 @@ export function Inventory() {
             Export
           </Button>
         </div>
-        {products.loading ? (
+        {products.loading && !products.data ? (
           <Loading />
         ) : products.error ? (
           <ErrorState error={products.error} retry={products.reload} />
@@ -320,11 +341,11 @@ export function Inventory() {
             <table className="inventory-table">
               <thead>
                 <tr>
-                  <th>Product</th>
+                  {header("name", "Product")}
                   <th>Category</th>
-                  <th>Price</th>
-                  <th>Available</th>
-                  <th>Reserved</th>
+                  {header("priceCents", "Price")}
+                  {header("available", "Available")}
+                  {header("reserved", "Reserved")}
                   <th>Status</th>
                   <th>
                     <span className="sr-only">Actions</span>
@@ -354,7 +375,6 @@ export function Inventory() {
                     <td className="number">{money(product.priceCents)}</td>
                     <td>
                       <strong>{product.available}</strong>
-                      <span className="muted"> units</span>
                     </td>
                     <td>{product.reserved}</td>
                     <td>
@@ -362,7 +382,7 @@ export function Inventory() {
                         value={
                           product.available === 0
                             ? "OUT_OF_STOCK"
-                            : product.available < 5
+                            : product.available <= threshold
                               ? "LOW_STOCK"
                               : "IN_STOCK"
                         }
@@ -413,11 +433,11 @@ export function Inventory() {
           </div>
         ) : (
           <Empty
-            title={list.length ? "No products found" : "Every great store starts somewhere."}
+            title={list.length ? "No products found" : "Add your first product"}
             detail={
               list.length
                 ? "Try a different search or stock filter."
-                : "Add your first product, then connect every physical unit."
+                : "Then receive its physical units to create their tags."
             }
           >
             <Button variant="secondary" onClick={() => setEditing("new")}>
@@ -444,19 +464,16 @@ export function Inventory() {
           </button>
         </div>
       </Panel>
-      <div className="quiet-note">
-        <Radio size={16} />
-        <p>
-          Every physical unit has its own identity.{" "}
-          <Link to="/store/tags">
-            Connect your products in Tag studio <ArrowRight size={13} />
-          </Link>
-        </p>
-      </div>
+      <p className="quiet-note">
+        Every physical unit has its own identity.{" "}
+        <Link to="/store/tags">
+          Open Tag studio <ArrowRight size={12} />
+        </Link>
+      </p>
       {editing && (
         <Modal
-          title={editing === "new" ? "Make room for something new." : "A little product refresh."}
-          description="Your product details live here. Each physical unit gets its own NFC identity."
+          title={editing === "new" ? "Add product" : "Edit product"}
+          description="Each physical unit you receive gets its own NFC identity."
           onClose={close}
         >
           <form className="form-stack" onSubmit={save}>
@@ -468,7 +485,6 @@ export function Inventory() {
                   required
                   maxLength={160}
                   defaultValue={editing === "new" ? "" : editing.name}
-                  placeholder="e.g. Everyday ceramic mug"
                 />
               </label>
               <label>
@@ -478,7 +494,6 @@ export function Inventory() {
                   required
                   maxLength={80}
                   defaultValue={editing === "new" ? "" : editing.sku}
-                  placeholder="e.g. HOME-001"
                 />
               </label>
               <label>
@@ -489,7 +504,7 @@ export function Inventory() {
                   required
                   maxLength={80}
                   defaultValue={editing === "new" ? "" : editing.category}
-                  placeholder="e.g. Home & living"
+
                   list="category-options"
                 />
                 <datalist id="category-options">
@@ -557,11 +572,7 @@ export function Inventory() {
         </Modal>
       )}
       {receiving && (
-        <Modal
-          title="A fresh arrival."
-          description={`Receive new physical units of ${receiving.name}.`}
-          onClose={close}
-        >
+        <Modal title="Receive units" description={receiving.name} onClose={close}>
           <form className="form-stack" onSubmit={receive}>
             <label>
               Quantity to receive
@@ -617,6 +628,7 @@ export function Inventory() {
 }
 function UnitList({ product }: { product: Product }) {
   const units = useData<Unit[]>("/units");
+  const [history, setHistory] = useState<Unit | null>(null);
   const list = units.data?.filter((unit) => unit.productId === product.id) || [];
   return units.loading ? (
     <Loading />
@@ -631,6 +643,13 @@ function UnitList({ product }: { product: Product }) {
             <small className="mono">{unit.id}</small>
           </span>
           <Status value={unit.status} />
+          <button
+            className="icon-button"
+            aria-label={`History of ${unit.staffCode}`}
+            onClick={() => setHistory(unit)}
+          >
+            <History size={15} />
+          </button>
           <Link
             className="icon-button"
             to={`/u/${unit.id}`}
@@ -640,10 +659,11 @@ function UnitList({ product }: { product: Product }) {
           </Link>
         </div>
       ))}
+      {history && <UnitHistory unit={history} onClose={() => setHistory(null)} />}
     </div>
   ) : (
     <Empty
-      title="Ready to receive"
+      title="No units yet"
       detail="Receive physical units for this product to create NFC identities."
     />
   );
@@ -651,6 +671,8 @@ function UnitList({ product }: { product: Product }) {
 export function Tags() {
   const units = useData<Unit[]>("/units");
   const [query, setQuery] = useState("");
+  const [history, setHistory] = useState<Unit | null>(null);
+  const navigate = useNavigate();
   const [status, setStatus] = useState("AVAILABLE");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const notify = useNotify();
@@ -683,37 +705,44 @@ export function Tags() {
         unit.status,
       ]),
     ]);
+    remember();
     notify(`${rows.length} NFC tag links exported.`);
+  }
+  function remember() {
+    try {
+      localStorage.setItem("tapcart.tags-exported", "1");
+    } catch {
+      // The setup checklist simply keeps this step open when storage is blocked.
+    }
+  }
+  function printLabels() {
+    remember();
+    try {
+      sessionStorage.setItem("tapcart.labels", JSON.stringify([...selected]));
+    } catch {
+      notify("Your browser blocked label storage. Export the manifest instead.");
+      return;
+    }
+    navigate("/labels");
   }
   return (
     <>
       <PageTitle
-        eyebrow="SMALL TAGS. BIG POSSIBILITIES."
-        title="Bring your products to life."
-        description="Give every physical item its own link. One tap starts the connection."
+        title="Tag studio"
+        description="Select units, export links for your NFC encoder, or print QR labels. Read each tag back before attaching it."
         actions={
-          <Button disabled={!selected.size} onClick={exportTags}>
-            <Download size={16} />
-            Export manifest{selected.size > 0 && ` (${selected.size})`}
-          </Button>
+          <>
+            <Button variant="secondary" disabled={!selected.size} onClick={printLabels}>
+              <Printer size={15} />
+              Print QR labels
+            </Button>
+            <Button disabled={!selected.size} onClick={exportTags}>
+              <Download size={15} />
+              Export manifest{selected.size > 0 && ` (${selected.size})`}
+            </Button>
+          </>
         }
       />
-      <div className="tag-guide">
-        <span className="tag-guide-icon">
-          <Radio size={34} strokeWidth={1.4} />
-        </span>
-        <div>
-          <h2>A unique identity. For every single item.</h2>
-          <p>
-            Select physical units, export their links and write each HTTPS URI to its own NFC tag.
-            Read back each tag before attaching it.
-          </p>
-        </div>
-        <span className="guide-badge">
-          <ShieldCheckIcon />
-          Serialized by design
-        </span>
-      </div>
       <Panel>
         <div className="inventory-toolbar">
           <div className="search-field">
@@ -737,7 +766,7 @@ export function Tags() {
           </select>
           <span className="muted">{selected.size} selected</span>
         </div>
-        {units.loading ? (
+        {units.loading && !units.data ? (
           <Loading />
         ) : units.error ? (
           <ErrorState error={units.error} retry={units.reload} />
@@ -809,6 +838,13 @@ export function Tags() {
                           <Copy size={14} />
                           Copy link
                         </button>
+                        <button
+                          className="icon-button"
+                          aria-label={`History of ${unit.staffCode}`}
+                          onClick={() => setHistory(unit)}
+                        >
+                          <History size={15} />
+                        </button>
                         <Link
                           className="icon-button"
                           to={`/u/${unit.id}`}
@@ -840,16 +876,127 @@ export function Tags() {
           </button>
         </div>
       </Panel>
-      <div className="quiet-note">
-        <Radio size={16} />
-        <p>
-          Static NFC tags identify an inventory record. Use physical product checks and
-          tamper-evident labels when provisioning.
-        </p>
-      </div>
+      <p className="quiet-note">
+        Static NFC tags identify an inventory record. They do not prove a product is genuine, so use
+        physical checks and tamper-evident labels.
+      </p>
+      {history && <UnitHistory unit={history} onClose={() => setHistory(null)} />}
     </>
   );
 }
-function ShieldCheckIcon() {
-  return <Check size={14} />;
+export function UnitHistory({ unit, onClose }: { unit: Unit; onClose: () => void }) {
+  const history = useData<{
+    createdAt: string;
+    events: {
+      id: string;
+      eventType: string;
+      createdAt: string;
+      payload: Record<string, unknown>;
+    }[];
+  }>(`/units/${unit.id}/history`);
+  return (
+    <Modal title={unit.staffCode} description={unit.name} onClose={onClose}>
+      <div className="detail-status">
+        <Status value={unit.status} />
+        <span>
+          Version {unit.version} · Sale epoch {unit.saleEpoch}
+        </span>
+      </div>
+      {history.loading ? (
+        <Loading rows={3} />
+      ) : history.error ? (
+        <ErrorState error={history.error} retry={history.reload} />
+      ) : (
+        <ol className="timeline">
+          {history.data?.events.map((row) => (
+            <li key={row.id}>
+              <span aria-hidden="true" />
+              <div>
+                <strong>{eventLabel(row)}</strong>
+                <small>{dateTime(row.createdAt)}</small>
+              </div>
+            </li>
+          ))}
+          <li>
+            <span aria-hidden="true" />
+            <div>
+              <strong>Unit received</strong>
+              <small>{history.data && dateTime(history.data.createdAt)}</small>
+            </div>
+          </li>
+        </ol>
+      )}
+    </Modal>
+  );
+}
+/** Printable sheet of QR labels. QR is the fallback carrier for phones or tags without NFC. */
+export function Labels() {
+  const units = useData<Unit[]>("/units");
+  const [codes, setCodes] = useState<Record<string, string>>({});
+  const [ids] = useState<string[]>(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem("tapcart.labels") || "[]") as string[];
+    } catch {
+      return [];
+    }
+  });
+  const rows = (units.data || []).filter((unit) => ids.includes(unit.id));
+  useEffect(() => {
+    let active = true;
+    if (!units.data) return;
+    Promise.all(
+      units.data
+        .filter((unit) => ids.includes(unit.id))
+        .map(
+          async (unit) =>
+            [
+              unit.id,
+              await QRCode.toDataURL(`${window.location.origin}/u/${unit.id}`, {
+                errorCorrectionLevel: "M",
+                margin: 0,
+                width: 240,
+              }),
+            ] as const,
+        ),
+    ).then((entries) => {
+      if (active) setCodes(Object.fromEntries(entries));
+    });
+    return () => {
+      active = false;
+    };
+  }, [units.data, ids]);
+  return (
+    <div className="labels-page">
+      <header className="labels-head">
+        <Link to="/store/tags" className="text-button">
+          Back to Tag studio
+        </Link>
+        <span>{rows.length} labels</span>
+        <Button onClick={() => window.print()} disabled={!rows.length}>
+          <Printer size={15} />
+          Print
+        </Button>
+      </header>
+      {units.loading ? (
+        <Loading />
+      ) : units.error ? (
+        <ErrorState error={units.error} retry={units.reload} />
+      ) : rows.length ? (
+        <div className="label-sheet">
+          {rows.map((unit) => (
+            <article className="label" key={unit.id}>
+              {codes[unit.id] && <img src={codes[unit.id]} alt={`QR code for ${unit.staffCode}`} />}
+              <div>
+                <strong>{unit.name}</strong>
+                <span>{money(unit.priceCents)}</span>
+                <code>{unit.staffCode}</code>
+              </div>
+            </article>
+          ))}
+        </div>
+      ) : (
+        <Empty title="No labels selected" detail="Choose units in Tag studio first." />
+      )}
+    </div>
+  );
 }

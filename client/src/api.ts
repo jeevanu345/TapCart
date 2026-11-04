@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 export type { User, Product, Unit, Order, OrderItem, Role } from "../../server/types";
 import type { Product, Order, User } from "../../server/types";
+import type { PlanId } from "../../server/plans";
 export interface Dashboard {
   metrics: {
     revenueCents: number;
@@ -26,6 +27,47 @@ export interface Analytics {
   topProducts: { id: string; name: string; units: number; revenueCents: number }[];
   statusCounts: { status: string; count: number }[];
   categorySales: { category: string; units: number; revenueCents: number }[];
+  days: number;
+  current: PeriodTotals | null;
+  previous: PeriodTotals | null;
+  paymentMix: { method: string; orders: number; revenueCents: number }[];
+  reservationOutcomes: { type: string; count: number }[];
+}
+export interface PeriodTotals {
+  revenueCents: number;
+  units: number;
+  returns: number;
+  orders: number;
+}
+export interface AppNotification {
+  id: string;
+  title: string;
+  detail: string;
+  href: string;
+}
+export interface ActivityEvent {
+  id: string;
+  eventType: string;
+  aggregateId: string;
+  createdAt: string;
+  payload: Record<string, unknown>;
+  unitCode: string;
+  productName: string;
+  totalCents: number | null;
+}
+export interface Workspace {
+  store: Store & {
+    plan: PlanId;
+    planRequested: PlanId | null;
+    phone: string;
+    supportEmail: string;
+    lowStockThreshold: number;
+  };
+  usage: { products: number; units: number; seats: number; invites: number; plan: PlanId };
+}
+export interface Team {
+  members: { id: string; name: string; email: string; role: string; createdAt: string }[];
+  invites: { id: string; role: string; email: string; expiresAt: string; createdAt: string }[];
 }
 export interface Customer {
   id: string;
@@ -44,6 +86,8 @@ export interface Store {
   ownerName: string;
   email: string;
   createdAt: string;
+  plan?: PlanId;
+  planRequested?: PlanId | null;
 }
 export interface Session {
   user: User | null;
@@ -132,6 +176,13 @@ export const money = (cents: number) =>
   }).format(cents / 100);
 export const date = (value: string) =>
   new Date(value).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+export const dateTime = (value: string) =>
+  new Date(value).toLocaleString("en-IN", {
+    day: "numeric",
+    month: "short",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 export const shortId = (id: string) => `TC-${id.slice(-6).toUpperCase()}`;
 export function downloadCSV(filename: string, rows: (string | number)[][]) {
   const csv = serializeCSV(rows);

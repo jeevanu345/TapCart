@@ -1,21 +1,19 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
   ArrowLeft,
   ArrowRight,
   Check,
-  CheckCircle2,
   Clock3,
   Download,
-  Package,
   ReceiptText,
   RotateCcw,
   Search,
-  ShoppingBag,
 } from "lucide-react";
 import {
   api,
   date,
+  dateTime,
   downloadCSV,
   message,
   money,
@@ -39,11 +37,194 @@ import {
   useNotify,
 } from "./ui";
 import { useAuth } from "./App";
+export function Desk() {
+  const orders = useData<Order[]>("/orders");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [lookup, setLookup] = useState("");
+  const [lookupError, setLookupError] = useState("");
+  const [found, setFound] = useState<Unit | null>(null);
+  const [busy, setBusy] = useState("");
+  const [error, setError] = useState("");
+  const notify = useNotify();
+  useEffect(() => {
+    const interval = setInterval(orders.reload, 5000);
+    return () => clearInterval(interval);
+  }, [orders.reload]);
+  const queue = (orders.data || []).filter((order) => order.status === "PAYMENT_PENDING");
+  const refunds = (orders.data || []).filter((order) => order.status === "REFUND_PENDING");
+  const open = (orders.data || []).find((order) => order.id === selected);
+  async function settle(order: Order) {
+    setBusy(order.id);
+    setError("");
+    try {
+      await write(`/orders/${order.id}/confirm-payment`, {}, "POST", crypto.randomUUID());
+      notify(`${shortId(order.id)} settled. Payment recorded.`);
+      orders.reload();
+    } catch (e) {
+      setError(message(e));
+      orders.reload();
+    } finally {
+      setBusy("");
+    }
+  }
+  async function find(event: FormEvent) {
+    event.preventDefault();
+    setLookupError("");
+    setFound(null);
+    const value = lookup.trim();
+    const uuid = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i.exec(value)?.[0];
+    try {
+      if (uuid) setFound(await api<Unit>(`/units/${uuid}`));
+      else {
+        const rows = await api<Unit[]>("/units");
+        const match = rows.find((row) => row.staffCode.toLowerCase() === value.toLowerCase());
+        if (!match) throw new Error("No unit has that link or staff code.");
+        setFound(match);
+      }
+    } catch (e) {
+      setLookupError(message(e));
+    }
+  }
+  return (
+    <>
+      <PageTitle
+        title="Desk"
+        description="Orders waiting on payment. This queue refreshes by itself."
+      />
+      {error && <ErrorState error={error} />}
+      <div className="desk-grid">
+        <Panel
+          title={`${queue.length} waiting`}
+          subtitle={`${money(queue.reduce((sum, order) => sum + order.totalCents, 0))} to collect`}
+        >
+          {orders.loading && !orders.data ? (
+            <Loading />
+          ) : orders.error && !orders.data ? (
+            <ErrorState error={orders.error} retry={orders.reload} />
+          ) : queue.length ? (
+            <ul className="desk-queue">
+              {queue.map((order) => (
+                <li key={order.id}>
+                  <button className="desk-order" onClick={() => setSelected(order.id)}>
+                    <strong>{order.customerName}</strong>
+                    <small>
+                      {shortId(order.id)} · {order.items.length} unit
+                      {order.items.length === 1 ? "" : "s"} · {dateTime(order.createdAt)}
+                    </small>
+                  </button>
+                  <strong className="desk-amount">{money(order.totalCents)}</strong>
+                  {order.paymentMethod === "DESK" ? (
+                    <Button busy={busy === order.id} onClick={() => settle(order)}>
+                      <Check size={15} />
+                      Payment received
+                    </Button>
+                  ) : (
+                    <span className="muted">Paying by card</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <Empty title="The desk is clear" detail="New orders appear here within seconds." />
+          )}
+        </Panel>
+        <div className="desk-side">
+          <Panel title="Look up a unit" subtitle="Paste a tag link or type a staff code.">
+            <form className="chat-form" onSubmit={find}>
+              <input
+                aria-label="Tag link or staff code"
+                value={lookup}
+                onChange={(event) => setLookup(event.target.value)}
+              />
+              <Button type="submit" variant="secondary" disabled={!lookup.trim()}>
+                Find
+              </Button>
+            </form>
+            {lookupError && <ErrorState error={lookupError} />}
+            {found && (
+              <div className="unit-found">
+                <strong>{found.name}</strong>
+                <code>{found.staffCode}</code>
+                <Status value={found.status} />
+                <span>{money(found.priceCents)}</span>
+              </div>
+            )}
+          </Panel>
+          {refunds.length > 0 && (
+            <Panel title={`${refunds.length} refunds to settle`}>
+              <ul className="desk-queue compact">
+                {refunds.map((order) => (
+                  <li key={order.id}>
+                    <button className="desk-order" onClick={() => setSelected(order.id)}>
+                      <strong>{order.customerName}</strong>
+                      <small>{shortId(order.id)}</small>
+                    </button>
+                    <strong className="desk-amount">{money(order.refundDueCents)}</strong>
+                  </li>
+                ))}
+              </ul>
+            </Panel>
+          )}
+        </div>
+      </div>
+      {open && (
+        <Modal
+          title={`Order ${shortId(open.id)}`}
+          description={`${open.customerName} · ${date(open.createdAt)}`}
+          onClose={() => setSelected(null)}
+        >
+          <OrderDetails order={open} onChange={orders.reload} />
+        </Modal>
+      )}
+    </>
+  );
+}
+const STAGES = ["PAYMENT_PENDING", "PAID", "COMPLETED"];
+/** Payment state machine from the protocol, shown as it actually moved. */
+function OrderTimeline({ order }: { order: Order }) {
+  const branch = ["PAYMENT_FAILED", "REFUND_PENDING", "REFUNDED"].includes(order.status);
+  const reached = branch
+    ? order.completedAt
+      ? 2
+      : order.paidAt
+        ? 1
+        : 0
+    : STAGES.indexOf(order.status);
+  const stages = [
+    { label: "Ordered", time: order.createdAt },
+    { label: "Paid", time: order.paidAt },
+    { label: "Completed", time: order.completedAt },
+  ];
+  return (
+    <ol className="order-timeline" aria-label="Order progress">
+      {stages.map((stage, index) => (
+        <li key={stage.label} data-on={index <= reached}>
+          <span aria-hidden="true" />
+          <strong>{stage.label}</strong>
+          <small>{stage.time && index <= reached ? dateTime(stage.time) : "—"}</small>
+        </li>
+      ))}
+      {branch && (
+        <li data-on="true" data-branch="true">
+          <span aria-hidden="true" />
+          <strong>
+            {order.status === "PAYMENT_FAILED"
+              ? "Failed"
+              : order.status === "REFUNDED"
+                ? "Refunded"
+                : "Refund due"}
+          </strong>
+          <small>{order.failureReason ? "See note" : "—"}</small>
+        </li>
+      )}
+    </ol>
+  );
+}
 export function Orders() {
   const orders = useData<Order[]>("/orders");
   const [query, setQuery] = useState("");
-  const [status, setStatus] = useState("all");
   const [params, setParams] = useSearchParams();
+  const [status, setStatus] = useState(params.get("status") || "all");
   const selected = (orders.data || []).find((order) => order.id === params.get("order"));
   const pending = (orders.data || []).filter((order) => order.status === "PAYMENT_PENDING");
   const completed = (orders.data || []).filter((order) => order.status === "COMPLETED");
@@ -57,9 +238,8 @@ export function Orders() {
   return (
     <>
       <PageTitle
-        eyebrow="EVERY CHECKOUT, ACCOUNTED FOR"
-        title="The little moments add up."
-        description="Follow every order, from a shopper’s basket to a happy goodbye."
+        title="Orders"
+        description="Every checkout, from reservation to receipt."
         actions={
           <Button
             variant="secondary"
@@ -79,42 +259,32 @@ export function Orders() {
             }
           >
             <Download size={16} />
-            Export orders
+            Export
           </Button>
         }
       />
-      <div className="summary-strip">
+      <div className="metric-strip three">
         <div>
-          <ShoppingBag size={20} />
-          <strong>{orders.data?.length || 0}</strong>
           <span>Total orders</span>
+          <strong>{orders.data?.length || 0}</strong>
         </div>
         <div>
-          <Clock3 size={20} />
-          <strong>{pending.length}</strong>
           <span>Awaiting payment</span>
+          <strong>{pending.length}</strong>
         </div>
         <div>
-          <CheckCircle2 size={20} />
-          <strong>{money(completed.reduce((sum, order) => sum + order.totalCents, 0))}</strong>
           <span>Completed revenue</span>
+          <strong>{money(completed.reduce((sum, order) => sum + order.totalCents, 0))}</strong>
         </div>
       </div>
       {pending.length > 0 && (
-        <div className="attention-banner">
-          <Clock3 size={19} />
-          <div>
-            <strong>
-              {pending.length} {pending.length === 1 ? "order is" : "orders are"} waiting for
-              payment.
-            </strong>
-            <span>Review desk payments when your shoppers are ready.</span>
-          </div>
-          <Button variant="secondary" onClick={() => setStatus("PAYMENT_PENDING")}>
-            Review payments
-            <ArrowRight size={15} />
-          </Button>
-        </div>
+        <Link to="/store/desk" className="next-action">
+          <strong>
+            {pending.length} {pending.length === 1 ? "order is" : "orders are"} waiting for payment
+          </strong>
+          <span>Open the desk</span>
+          <ArrowRight size={16} />
+        </Link>
       )}
       <Panel>
         <div className="inventory-toolbar">
@@ -140,7 +310,7 @@ export function Orders() {
             <option value="REFUNDED">Refunded</option>
           </select>
         </div>
-        {orders.loading ? (
+        {orders.loading && !orders.data ? (
           <Loading />
         ) : orders.error ? (
           <ErrorState error={orders.error} retry={orders.reload} />
@@ -152,7 +322,7 @@ export function Orders() {
                   <th>Order</th>
                   <th>Customer</th>
                   <th>Items</th>
-                  <th>Total</th>
+                  <th className="number">Total</th>
                   <th>Payment</th>
                   <th>Status</th>
                   <th>
@@ -169,15 +339,8 @@ export function Orders() {
                       </button>
                       <small>{date(order.createdAt)}</small>
                     </td>
-                    <td>
-                      <div className="customer-cell">
-                        <span className="avatar small">
-                          {order.customerName.slice(0, 2).toUpperCase()}
-                        </span>
-                        {order.customerName}
-                      </div>
-                    </td>
-                    <td>{order.items.length} units</td>
+                    <td>{order.customerName}</td>
+                    <td>{order.items.length}</td>
                     <td className="number">{money(order.totalCents)}</td>
                     <td>
                       {order.paymentMethod === "DESK"
@@ -205,19 +368,16 @@ export function Orders() {
           </div>
         ) : (
           <Empty
-            title={
-              query || status !== "all" ? "No matching orders" : "Ready for the first of many."
-            }
+            title={query || status !== "all" ? "No matching orders" : "No orders yet"}
             detail={
               query || status !== "all"
                 ? "Try another search or status."
-                : "Your shoppers’ orders will appear here."
+                : "Shopper orders will appear here."
             }
           />
         )}
         <div className="table-footer">
           <span>{list.length} orders</span>
-          <span>Totals calculated by your store</span>
         </div>
       </Panel>
       {selected && (
@@ -294,6 +454,7 @@ export function OrderDetails({
               : "Development payment"}
         </span>
       </div>
+      <OrderTimeline order={order} />
       {order.status === "PAYMENT_PENDING" && (
         <div className="inline-info">
           <Clock3 size={17} />
@@ -314,9 +475,6 @@ export function OrderDetails({
       <div className="order-lines">
         {order.items.map((item) => (
           <div className="order-line" key={item.unitId}>
-            <span className="line-icon">
-              <Package size={19} />
-            </span>
             <span>
               <strong>{item.name}</strong>
               <small>
@@ -423,6 +581,7 @@ export function Receipt() {
   const { id } = useParams();
   const { user } = useAuth();
   const order = useData<Order>(`/orders/${id}`);
+  const staff = user?.role === "STORE";
   return (
     <div className="receipt-page">
       <header>
@@ -430,11 +589,11 @@ export function Receipt() {
           <Logo />
         </Link>
         <Link
-          to={user?.role === "CUSTOMER" ? "/customer" : "/store/orders"}
+          to={staff ? "/store/orders" : user?.role === "ADMIN" ? "/admin" : "/customer"}
           className="text-button"
         >
           <ArrowLeft size={16} />
-          Back to {user?.role === "CUSTOMER" ? "shopping" : "orders"}
+          Back to {staff ? "orders" : user?.role === "ADMIN" ? "stores" : "shopping"}
         </Link>
       </header>
       {order.loading ? (
@@ -444,21 +603,12 @@ export function Receipt() {
       ) : (
         <Panel className="receipt">
           <div className="receipt-heading">
-            <span className="receipt-symbol">
-              <ShoppingBag size={29} strokeWidth={1.4} />
-            </span>
-            <span className="eyebrow">{order.data.storeName}</span>
-            <h1>
-              {order.data.status === "COMPLETED"
-                ? "A little thank you."
-                : "Your order, at a glance."}
-            </h1>
+            <h1>{order.data.storeName}</h1>
             <p>
               {order.data.status === "COMPLETED"
-                ? "For shopping with us. See you around the neighborhood."
+                ? "Thanks for shopping with us."
                 : "Check the status below before leaving the store."}
             </p>
-            <Status value={order.data.status} />
           </div>
           <div className="receipt-meta">
             <span>
@@ -480,14 +630,6 @@ export function Receipt() {
             <Download size={16} />
             Open printable invoice
           </a>
-          <div className="receipt-footer">
-            <Logo compact />
-            <p>
-              Good things come full circle.
-              <br />
-              Thanks for being part of ours.
-            </p>
-          </div>
         </Panel>
       )}
     </div>
