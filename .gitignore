@@ -1,10 +1,6 @@
 # Dependencies
 node_modules/
 
-# Next.js
-.next/
-out/
-
 # Production build artifacts
 dist/
 build/
@@ -61,3 +57,7 @@ Thumbs.db
 playwright-report/
 test-results/
 
+
+# Local research measurements
+field-measurements.csv
+field-summary.json

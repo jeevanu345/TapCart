@@ -1,0 +1,145 @@
+{
+  "generated_at": "2026-11-03T21:12:23.022Z",
+  "node": "v26.7.0",
+  "postgres": "PostgreSQL 16.13 (Homebrew) on aarch64-apple-darwin25.2.0, compiled by Apple clang version 17.0.0 (clang-1700.6.3.2), 64-bit",
+  "workload": "one-unit hot contention; pre-acquired clients; no emulated RTT",
+  "negative_control": "naive reads synchronized before unconditional updates; latency not comparable",
+  "rounds": 3,
+  "results": [
+    {
+      "mode": "conditional",
+      "round": 1,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 1.5196669999999983,
+      "p50_ms": 0.6997080000000011,
+      "p95_ms": 0.8007910000000038
+    },
+    {
+      "mode": "conditional",
+      "round": 2,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 0.4447919999999925,
+      "p50_ms": 0.16883400000000393,
+      "p95_ms": 0.2115000000000009
+    },
+    {
+      "mode": "conditional",
+      "round": 3,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 0.4034170000000046,
+      "p50_ms": 0.15016699999999616,
+      "p95_ms": 0.16620799999999747
+    },
+    {
+      "mode": "select_for_update",
+      "round": 1,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 1.387833999999998,
+      "p50_ms": 0.7194169999999929,
+      "p95_ms": 1.1673329999999993
+    },
+    {
+      "mode": "select_for_update",
+      "round": 2,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 1.459582999999995,
+      "p50_ms": 0.8768749999999983,
+      "p95_ms": 1.2914159999999981
+    },
+    {
+      "mode": "select_for_update",
+      "round": 3,
+      "clients": 10,
+      "reported_successes": 1,
+      "oversold": false,
+      "final": {
+        "status": "RESERVED",
+        "owner": 0,
+        "version": "1"
+      },
+      "round_ms": 1.3789170000000013,
+      "p50_ms": 0.8029999999999973,
+      "p95_ms": 1.2199999999999989
+    },
+    {
+      "mode": "naive",
+      "round": 1,
+      "clients": 10,
+      "reported_successes": 10,
+      "oversold": true,
+      "final": {
+        "status": "RESERVED",
+        "owner": 9,
+        "version": "10"
+      },
+      "round_ms": 0.6041660000000064,
+      "p50_ms": 0.4276660000000021,
+      "p95_ms": 0.4372910000000019
+    },
+    {
+      "mode": "naive",
+      "round": 2,
+      "clients": 10,
+      "reported_successes": 10,
+      "oversold": true,
+      "final": {
+        "status": "RESERVED",
+        "owner": 9,
+        "version": "10"
+      },
+      "round_ms": 0.5330419999999947,
+      "p50_ms": 0.38083299999999554,
+      "p95_ms": 0.3865420000000057
+    },
+    {
+      "mode": "naive",
+      "round": 3,
+      "clients": 10,
+      "reported_successes": 10,
+      "oversold": true,
+      "final": {
+        "status": "RESERVED",
+        "owner": 8,
+        "version": "10"
+      },
+      "round_ms": 0.7666250000000048,
+      "p50_ms": 0.5502919999999989,
+      "p95_ms": 0.6148330000000044
+    }
+  ]
+}

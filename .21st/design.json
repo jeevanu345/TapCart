@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "project": {
+    "name": "tapcart",
+    "productType": "NFC retail operations and shopping",
+    "stack": [
+      "react",
+      "vite"
+    ]
+  },
+  "sources": {
+    "tokens": [
+      "client/src/styles.css"
+    ],
+    "components": [
+      "client/src/ui.tsx"
+    ],
+    "assets": [],
+    "instructions": []
+  },
+  "design": {
+    "colorMode": "light",
+    "colors": {
+      "--canvas": {
+        "value": "#f7f8f4",
+        "source": "client/src/styles.css"
+      },
+      "--surface": {
+        "value": "#fff",
+        "source": "client/src/styles.css"
+      },
+      "--ink": {
+        "value": "#28372d",
+        "source": "client/src/styles.css"
+      },
+      "--muted": {
+        "value": "#68725e",
+        "source": "client/src/styles.css"
+      },
+      "--green": {
+        "value": "#285340",
+        "source": "client/src/styles.css"
+      },
+      "--green-soft": {
+        "value": "#edf3eb",
+        "source": "client/src/styles.css"
+      },
+      "--border": {
+        "value": "#e7e9e1",
+        "source": "client/src/styles.css"
+      }
+    },
+    "typography": {},
+    "spacing": {},
+    "radius": {},
+    "shadows": {},
+    "motion": {},
+    "density": "comfortable"
+  },
+  "components": {
+    "installed": [],
+    "preferredPrimitives": [
+      "radix-ui"
+    ],
+    "patterns": []
+  },
+  "constraints": {
+    "must": [
+      "React and TypeScript; no Next.js runtime",
+      "Responsive retailer and shopper flows",
+      "Keyboard access, visible focus, readable contrast, truthful loading/error/empty states",
+      "Money in INR; server-authoritative stock and payment"
+    ],
+    "avoid": [
+      "Fabricated metrics or provider status",
+      "Decorative motion on structural panels",
+      "External font dependencies"
+    ]
+  },
+  "decisions": [],
+  "evidence": [
+    {
+      "fact": "project.stack:react",
+      "source": "package.json"
+    },
+    {
+      "fact": "project.stack:vite",
+      "source": "package.json"
+    }
+  ],
+  "generatedAt": "2026-11-03T21:06:50.906Z"
+}
