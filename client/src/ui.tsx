@@ -226,7 +226,7 @@ export function Modal({
           className={`modal ${className}`}
           onOpenAutoFocus={(event) => {
             const field = (event.currentTarget as HTMLElement).querySelector<HTMLElement>(
-              "form input:not([readonly]), form select, form textarea",
+              "form input:not([readonly], [type=hidden]), form button[role=combobox], form select:not([aria-hidden=true]), form textarea",
             );
             if (field) {
               event.preventDefault();

@@ -18,11 +18,9 @@ This rebuild deliberately requires a still-live reservation when preparing check
 
 Events enter the outbox in the domain transaction. The default local consumer atomically inserts an event-ID-deduplicated delivery journal in PostgreSQL for the authorized event feed. This is not proof of delivery to an external broker. External delivery requires a real consumer with stable event IDs, acknowledgments, retries and monitoring; publication is at-least-once when such a consumer is used.
 
-## Intelligence
+## Intelligence and operations
 
-`server/intelligence.ts` computes a weighted recent/baseline demand forecast and square-root safety buffer. `server/ai.ts` reads authorized store aggregates, builds restock/operational signals and multi-product basket associations, and answers constrained questions. There is no required paid provider or secret. Local statistical mode is explicitly distinguished from a language model.
-
-Set OLLAMA_MODEL and a loopback OLLAMA_BASE_URL for optional Ollama wording grounded in the read model. The model receives catalog/aggregate evidence without customer personal data. It has no SQL/tool/write access; its output is plain text and never establishes inventory, prices, payment status or actions. Provider failure falls back to deterministic evidence. Confidence labels are sample-size heuristics, not calibrated probabilities. Forecasts are observational estimates, not measured accuracy guarantees; stockouts, sparse history, seasonality, supplier lead time and special events can invalidate them.
+`server/intelligence/` owns local sentence embeddings, worker-isolated PDF/OCR extraction, rolling-origin replenishment models, anomaly evidence and a bounded multilingual read-only assistant. `server/commerce/` owns supplier receiving and integer-paise coupon allocation; checkout persists per-unit paid amounts for exact refunds. `server/security/` owns one-use account tokens and encrypted TOTP enrollment, while `server/notifications/` delivers the transactional queue. Worker shutdown drains notification acknowledgments before closing PostgreSQL. Routes enforce tenant/role checks and all mutations use CSRF protection. Detailed contracts and deployment limits are in [intelligence](intelligence.md), [commerce](commerce.md), [security](security.md) and [NFC](nfc.md).
 
 ## Source references consulted
 

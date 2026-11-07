@@ -1,3 +1,4 @@
+import { Select } from "./select";
 import { useEffect, useState, type FormEvent } from "react";
 import { Navigate, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import { ArrowRight, Check, Copy, Trash2, UserPlus } from "lucide-react";
@@ -322,10 +323,10 @@ function TeamSettings() {
             <form className="form-stack" onSubmit={invite}>
               <label>
                 Role
-                <select name="role" defaultValue="STAFF">
+                <Select name="role" defaultValue="STAFF">
                   <option value="STAFF">Staff: run the floor and desk</option>
                   <option value="MANAGER">Manager: also manage team and settings</option>
-                </select>
+                </Select>
               </label>
               <label>
                 Their email (optional)

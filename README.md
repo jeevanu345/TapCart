@@ -20,9 +20,18 @@ The supplied [research manuscript](nfc.tex) drives the per-unit reservation prot
 - Local demand/reorder estimates, demand shifts, basket associations and an evidence-backed assistant. Optional Ollama language model; no paid AI key is required for local statistical mode.
 - Reproducible NFC/QR field collection/analysis, Wilson intervals, NDEF byte sizing and a real PostgreSQL contention probe in [research/](research/README.md).
 
+## Expanded operations and intelligence
+
+- Account recovery, verified email, authenticator MFA and one-use recovery codes; durable SMTP delivery with retries and a development capture inbox. [Security setup](docs/security.md).
+- Suppliers, reviewed purchase drafts, partial receiving with cost snapshots, server-priced coupons and payment reconciliation. [Commerce guide](docs/commerce.md).
+- Supplier-aware replenishment and rolling backtests, local invoice OCR with staff review, semantic catalog search, human-reviewed anomaly alerts and an English/Hindi/Kannada assistant with evidence. [Intelligence setup and limits](docs/intelligence.md).
+- Browser NFC encoding/read-back, authenticated NTAG424 SDM support, independent bounded TLA+ checks, expanded PostgreSQL fault scenarios and hardware trial instrumentation. [NFC guide](docs/nfc.md), [actual formal results](research/formal/README.md).
+
+Initial local AI setup: `npm run ai:models`. SMTP credentials and NFC hardware/personalization are required to validate real delivery and physical tags. Software tests do not substitute for those checks.
+
 ## Start locally
 
-Requires Node.js **22.12+**, npm and PostgreSQL **16+**. Never use the same database for production and tests.
+Requires Node.js **22.13+**, npm and PostgreSQL **16+**. Never use the same database for production and tests.
 
 ```sh
 npm ci
@@ -34,7 +43,7 @@ ALLOW_DEVELOPMENT_SEED=true npm run db:seed
 npm run dev
 ```
 
-Open **http://127.0.0.1:5173**. The API runs on port 3001. Vite proxies `/api`; browser and API are same-origin. Use the exact configured APP_ORIGIN, including host and port, for CSRF. Changing localhost to 127.0.0.1 changes the origin.
+Open **http://127.0.0.1:5173**. The API runs on port 3001. Vite proxies `/api`; browser and API are same-origin. If port 3001 is occupied by another project, use `PORT=3002 npm run dev`; Vite follows the same API port override. Use the exact configured APP_ORIGIN, including host and port, for CSRF. Changing localhost to 127.0.0.1 changes the origin.
 
 The development seed is explicit, refused in production, idempotent on a populated database, and includes labeled simulated historical orders so charts/forecasts can be exercised. Demo password: **TapCartDemo123!**.
 
@@ -102,6 +111,6 @@ Read [operations](docs/operations.md) for backups, recovery, security and observ
 
 This code implements and tests the manuscript's transaction design with documented stricter lease/version checks. The original TLA+ model, generated TeX tables, raw benchmark data and counterexamples are absent; this project does not claim to reproduce those results. New local tests and harnesses establish only their measured behavior.
 
-Static NFC tags identify a record; they do not authenticate physical goods. Actual phone/tag/material reliability and user studies require hardware measurements. Stripe live settlement, optional Ollama quality and deployed infrastructure require their own credentials and operational verification. SMS/email delivery and NTAG424 cryptographic authentication are not implemented or advertised as working. Forecasts are observational estimates; no accuracy guarantee is implied.
+Static NFC tags identify a record; they do not authenticate physical goods. Actual phone/tag/material reliability and user studies require hardware measurements. Stripe live settlement, optional Ollama quality and deployed infrastructure require their own credentials and operational verification. SMS is not implemented. SMTP delivery and a restricted NTAG424 SDM profile are implemented, with real email-provider and physical tag validation still required for deployment. Forecasts are observational estimates; no accuracy guarantee is implied.
 
 Proprietary / internal use. See [LICENSE](LICENSE).

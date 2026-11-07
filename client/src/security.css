@@ -1,0 +1,194 @@
+.security-page {
+  width: 100%;
+  max-width: 960px;
+  margin-inline: auto;
+  display: grid;
+  gap: 20px;
+  min-width: 0;
+}
+.security-page .page-title {
+  margin-bottom: 4px;
+}
+.security-page .security-panel {
+  padding: 24px;
+}
+.security-page .security-panel > .panel-head {
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 12px 20px;
+}
+.security-page .security-panel > .panel-head h2 {
+  font-size: 15px;
+}
+.security-page .security-panel > .panel-head p {
+  margin-top: 4px;
+  max-width: 56ch;
+  line-height: 1.6;
+}
+.security-section-body,
+.security-recovery,
+.security-enrollment,
+.security-manual-setup {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+.security-section-body > .button,
+.security-recovery > .button,
+.security-form > .button {
+  justify-self: start;
+  width: fit-content;
+  max-width: 100%;
+}
+.security-description {
+  max-width: 64ch;
+  color: var(--ink-2);
+  line-height: 1.65;
+}
+.security-email {
+  width: fit-content;
+  max-width: 100%;
+  font-weight: 500;
+  overflow-wrap: anywhere;
+}
+.security-email + .security-description {
+  margin-top: -8px;
+}
+.security-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+  width: fit-content;
+  padding: 4px 9px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-round);
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+.security-state > span {
+  width: 6px;
+  height: 6px;
+  border: 1px solid currentColor;
+  border-radius: var(--radius-round);
+}
+.security-state.is-enabled {
+  color: var(--ink);
+  background: var(--surface-2);
+}
+.security-state.is-enabled > span {
+  background: currentColor;
+}
+.security-notice {
+  padding: 12px 16px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface-2);
+  line-height: 1.6;
+}
+.security-page .security-form,
+.security-recovery {
+  width: 100%;
+  max-width: 480px;
+  gap: 20px;
+}
+.security-setup-details {
+  display: grid;
+  grid-template-columns: 180px minmax(0, 1fr);
+  align-items: center;
+  gap: 20px;
+  min-width: 0;
+}
+.security-qr {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  width: 180px;
+  height: 180px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: #ffffff;
+}
+.security-qr img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.security-manual-setup {
+  gap: 8px;
+  align-content: start;
+}
+.security-field-caption {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+.security-setup-key {
+  display: block;
+  padding: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-control);
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.7;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+.security-text-link {
+  width: fit-content;
+  margin-top: 4px;
+  font-size: 12px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.security-recovery-codes {
+  margin: 0;
+  padding: 16px 20px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-panel);
+  background: var(--surface-2);
+  color: var(--ink);
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 2;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.security-message-subject {
+  display: block;
+  max-width: 48ch;
+}
+.security-delivery-error {
+  max-width: 48ch;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.security-page .security-delivery .empty {
+  padding: 24px 16px;
+}
+.shopper-main.security-customer-main {
+  max-width: 1040px;
+  gap: 24px;
+}
+@media (max-width: 600px) {
+  .security-page {
+    gap: 16px;
+  }
+  .security-page .security-panel {
+    padding: 20px;
+  }
+  .security-page .security-panel > .panel-head {
+    margin-bottom: 16px;
+  }
+  .security-setup-details {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .security-recovery-codes {
+    padding: 16px;
+    font-size: 12px;
+  }
+}

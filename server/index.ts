@@ -3,6 +3,8 @@ import { createApp } from "./app.js";
 import { startWorkers } from "./protocol.js";
 import { reconcileStripePayments } from "./stripe.js";
 import { reconcileStripeRefunds } from "./refunds.js";
+import { startNotificationWorker } from "./notifications/worker.js";
+import { startIntelligenceWorker } from "./intelligence/worker.js";
 import { logger } from "./logger.js";
 
 const production = process.env.NODE_ENV === "production";
@@ -25,6 +27,8 @@ const app = createApp(db, {
 const port = Number(process.env.PORT || 3001);
 const server = app.listen(port, "0.0.0.0", () => logger.info({ port }, "TapCart listening"));
 const stopWorkers = startWorkers(db);
+const stopIntelligence = startIntelligenceWorker(db);
+const stopNotifications = startNotificationWorker(db, { production, origin });
 let providerRunning = false;
 const providerTimer = setInterval(async () => {
   if (providerRunning) return;
@@ -41,12 +45,15 @@ const providerTimer = setInterval(async () => {
 providerTimer.unref();
 async function shutdown() {
   stopWorkers();
+  const notificationsDrained = stopNotifications();
+  stopIntelligence();
   clearInterval(providerTimer);
   server.close(async () => {
+    await notificationsDrained;
     await db.pool.end();
     process.exit(0);
   });
-  setTimeout(() => process.exit(1), 10_000).unref();
+  setTimeout(() => process.exit(1), 45_000).unref();
 }
 process.on("SIGTERM", () => void shutdown());
 process.on("SIGINT", () => void shutdown());

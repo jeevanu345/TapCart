@@ -1,0 +1,154 @@
+.select-field {
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  min-width: 0;
+  max-width: 100%;
+  vertical-align: middle;
+}
+label > .select-field {
+  width: 100%;
+}
+.select-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  min-width: 0;
+  width: 100%;
+  padding: 7px 11px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  font-weight: 400;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+.select-trigger > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.select-trigger > svg {
+  flex: none;
+  color: var(--ink-3);
+}
+.select-trigger[data-state="open"] {
+  border-color: var(--ink);
+}
+.select-trigger:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.select-trigger[aria-invalid="true"] {
+  border-color: var(--ink);
+}
+.select-menu {
+  z-index: 110;
+  width: max-content;
+  min-width: min(var(--radix-select-trigger-width), 420px, calc(100vw - 24px));
+  max-width: min(420px, calc(100vw - 24px));
+  max-height: min(360px, var(--radix-select-content-available-height));
+  overflow: hidden;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow:
+    var(--shadow),
+    0 0 0 1px var(--line-strong);
+  font-size: 13px;
+  line-height: 1.4;
+}
+.select-viewport {
+  padding: 5px;
+  overscroll-behavior: contain;
+}
+.select-option {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 8px 12px 8px 32px;
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  user-select: none;
+  outline: none;
+  overflow-wrap: anywhere;
+}
+.select-option[data-state="checked"] {
+  font-weight: 600;
+  background: var(--surface-2);
+}
+.select-option[data-highlighted] {
+  background: var(--surface-3);
+  color: var(--ink);
+}
+.select-option[data-disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.select-check {
+  position: absolute;
+  left: 10px;
+  display: inline-flex;
+}
+.select-scroll {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 24px;
+  background: var(--surface);
+  color: var(--ink-3);
+}
+.select-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+/* Keep native submission, validation and reset semantics without showing an OS popup. */
+.select-field > .select-native {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  opacity: 0;
+  pointer-events: none;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+@media (hover: hover) and (pointer: fine) {
+  .select-trigger:not(:disabled):hover {
+    background: var(--surface-2);
+    border-color: var(--ink-3);
+  }
+}
+@media (max-width: 860px), (pointer: coarse) {
+  .select-trigger,
+  .select-option {
+    min-height: 44px;
+  }
+}
+.autocomplete-anchor {
+  min-width: 0;
+  width: 100%;
+}
+.autocomplete-menu {
+  min-width: min(var(--radix-popover-trigger-width), 420px, calc(100vw - 24px));
+  max-height: min(260px, var(--radix-popover-content-available-height));
+  overflow-y: auto;
+}
+.autocomplete-option {
+  width: 100%;
+  text-align: left;
+  font-size: 13px;
+}

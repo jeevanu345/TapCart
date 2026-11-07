@@ -13,6 +13,15 @@ const ord = () => import("./orders");
 const shop = () => import("./shopper");
 const sett = () => import("./settings");
 const rep = () => import("./reports");
+const commerce = () => import("./commerce");
+const security = () => import("./security");
+const SecurityPage = pick(security, "SecurityPage");
+const AccountRecovery = pick(security, "AccountRecovery");
+const Suppliers = pick(commerce, "Suppliers");
+const Purchasing = pick(commerce, "Purchasing");
+const Coupons = pick(commerce, "Coupons");
+const Reconciliation = pick(commerce, "Reconciliation");
+const IntelligenceLab = pick(() => import("./intelligence"), "IntelligenceLab");
 const Landing = pick(() => import("./landing"), "Landing");
 const AuthPage = pick(() => import("./auth"), "AuthPage");
 const Shell = pick(() => import("./shell"), "Shell");
@@ -71,6 +80,10 @@ export function App() {
             path="/"
             element={auth.user ? <Navigate to={homeFor(auth.user)} replace /> : <Landing />}
           />
+          <Route path="/forgot-password" element={<AccountRecovery />} />
+          <Route path="/reset-password" element={<AccountRecovery mode="reset" />} />
+          <Route path="/verify-email" element={<AccountRecovery mode="verify" />} />
+          <Route path="/account/security" element={<SecurityPage />} />
           <Route path="/login" element={<AuthPage />} />
           <Route path="/store/login" element={<AuthPage />} />
           <Route path="/admin/login" element={<AuthPage />} />
@@ -105,11 +118,17 @@ export function App() {
             <Route path="all-products" element={<Navigate to="/store/inventory" replace />} />
             <Route path="orders" element={<Orders />} />
             <Route path="sales" element={<Orders />} />
-            <Route path="purchases" element={<Orders />} />
+            <Route path="purchases" element={<Purchasing />} />
+            <Route path="suppliers" element={<Suppliers />} />
+            <Route path="coupons" element={<Coupons />} />
+            <Route path="reconciliation" element={<Reconciliation />} />
+            <Route path="security" element={<SecurityPage staff />} />
+            <Route path="intelligence/lab" element={<IntelligenceLab />} />
             <Route path="customers" element={<Customers />} />
             <Route path="reports" element={<Reports />} />
             <Route path="activity" element={<Activity />} />
-            <Route path="intelligence" element={<Intelligence />} />
+            <Route path="intelligence" element={<IntelligenceLab />} />
+            <Route path="intelligence/overview" element={<Intelligence />} />
             <Route path="tags" element={<Tags />} />
             <Route path="export" element={<Navigate to="/store/tags" replace />} />
             <Route path="settings" element={<Settings />} />
@@ -125,6 +144,8 @@ export function App() {
             <Route index element={<Admin />} />
             <Route path="dashboard" element={<Admin />} />
             <Route path="users" element={<Admin users />} />
+            <Route path="intelligence" element={<IntelligenceLab />} />
+            <Route path="security" element={<SecurityPage staff />} />
             <Route path="activity" element={<Activity />} />
             <Route path="settings" element={<Settings />} />
           </Route>

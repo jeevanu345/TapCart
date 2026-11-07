@@ -1,0 +1,20 @@
+Run date: 2026-11-06, Asia/Kolkata
+Specification: independently authored research/formal/TapCart.tla
+Source protocol: current server/protocol.ts and nfc.tex (read in full)
+Checker downloaded from official project:
+https://github.com/tlaplus/tlaplus/releases/latest/download/tla2tools.jar
+Resolved checker identifies itself as TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Java downloaded from official Eclipse Temurin distribution endpoint:
+https://api.adoptium.net/v3/binary/latest/21/ga/mac/aarch64/jre/hotspot/normal/eclipse
+Command: JAVA=/private/tmp/jdk-21.0.13+9-jre/Contents/Home/bin/java TLC_JAR=/private/tmp/tla2tools.jar research/formal/run.sh
+No original paper formal artifact was used. No hardware measurements were performed.
+openjdk version "21.0.13" 2026-10-20 LTS
+OpenJDK Runtime Environment Temurin-21.0.13+9 (build 21.0.13+9-LTS)
+OpenJDK 64-Bit Server VM Temurin-21.0.13+9 (build 21.0.13+9-LTS, mixed mode, sharing)
+
+Assertion-enforcing script re-run: 2026-11-07, Asia/Kolkata. Model/configuration hashes unchanged; run.sh SHA256 added. All eight expected outcomes passed.
+Runner negative control: JAVA=/usr/bin/true in an isolated temporary fixture (no verification output) correctly exited 1.
+
+Final root verification: 2026-11-07 Asia/Kolkata, same checker/runtime/model/configuration hashes.
+Expected-result assertions: all eight configurations PASS (results/checks.tsv).
+A sandboxed attempt failed to initialize TLC worker networking; the final outputs are the successful rerun with local runtime networking enabled.

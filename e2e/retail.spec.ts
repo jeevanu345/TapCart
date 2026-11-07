@@ -36,13 +36,10 @@ test("store operations render live data, create stock, answer a question, and fi
   await expect(dialog).not.toBeVisible();
   await expect(page.getByText("E2E Ceramic Cup", { exact: true })).toBeVisible();
   await page.getByRole("link", { name: /Intelligence/ }).click();
-  await page
-    .getByRole("textbox", { name: "Ask TapCart Intelligence" })
-    .fill("Which products need restocking?");
-  await page.getByRole("button", { name: "Send question" }).click();
-  await expect(page.locator(".chat-entry.assistant").first()).toContainText(
-    /available|reorder|observed/i,
-  );
+  await page.getByRole("button", { name: "Assistant", exact: true }).click();
+  await page.getByLabel("Your question").fill("Which products need restocking?");
+  await page.getByRole("button", { name: "Ask store assistant" }).click();
+  await expect(page.locator(".lab-answer").first()).toContainText(/available|reorder|observed/i);
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("dialog").getByRole("link", { name: "Inventory", exact: true }).click();

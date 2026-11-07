@@ -45,20 +45,23 @@ export function registerCatalogRoutes(app: Express, db: Database) {
     const input = productSchema.parse(req.body),
       storeId = await requireStore(db, req.auth!.user, req.body.storeId),
       productId = uuid();
-    await assertCapacity(db, storeId, { products: 1 });
-    await db.query(
-      "INSERT INTO product(id,store_id,sku,name,description,category,price_cents,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
-      [
-        productId,
-        storeId,
-        input.sku,
-        input.name,
-        input.description,
-        input.category,
-        input.priceCents,
-        input.imageUrl,
-      ],
-    );
+    await db.transaction(async (client) => {
+      await client.query("SELECT id FROM store WHERE id=$1 FOR UPDATE", [storeId]);
+      await assertCapacity(client, storeId, { products: 1 });
+      await client.query(
+        "INSERT INTO product(id,store_id,sku,name,description,category,price_cents,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+        [
+          productId,
+          storeId,
+          input.sku,
+          input.name,
+          input.description,
+          input.category,
+          input.priceCents,
+          input.imageUrl,
+        ],
+      );
+    });
     res.status(201).json(await product(db, productId));
   });
   app.patch("/api/products/:id", roles("STORE", "ADMIN"), async (req, res) => {
@@ -67,19 +70,27 @@ export function registerCatalogRoutes(app: Express, db: Database) {
     await requireStore(db, req.auth!.user, current.storeId);
     const input = productSchema.extend({ active: z.boolean() }).partial().parse(req.body),
       merged = { ...current, ...input };
-    await db.query(
-      "UPDATE product SET sku=$2,name=$3,description=$4,category=$5,price_cents=$6,image_url=$7,active=$8 WHERE id=$1",
-      [
-        productId,
-        merged.sku,
-        merged.name,
-        merged.description,
-        merged.category,
-        merged.priceCents,
-        merged.imageUrl,
-        merged.active,
-      ],
-    );
+    await db.transaction(async (client) => {
+      await client.query("SELECT id FROM store WHERE id=$1 FOR UPDATE", [current.storeId]);
+      const locked = (
+        await client.query("SELECT active FROM product WHERE id=$1 FOR UPDATE", [productId])
+      ).rows[0];
+      if (merged.active && !locked.active)
+        await assertCapacity(client, current.storeId, { products: 1 });
+      await client.query(
+        "UPDATE product SET sku=$2,name=$3,description=$4,category=$5,price_cents=$6,image_url=$7,active=$8 WHERE id=$1",
+        [
+          productId,
+          merged.sku,
+          merged.name,
+          merged.description,
+          merged.category,
+          merged.priceCents,
+          merged.imageUrl,
+          merged.active,
+        ],
+      );
+    });
     res.json(await product(db, productId));
   });
   app.delete("/api/products/:id", roles("STORE", "ADMIN"), async (req, res) => {
@@ -122,13 +133,14 @@ export function registerCatalogRoutes(app: Express, db: Database) {
         .parse(req.body),
       current = await product(db, input.productId);
     await requireStore(db, req.auth!.user, current.storeId);
-    await assertCapacity(db, current.storeId, { units: input.quantity });
     const result = await idempotent(
       db,
       `receive:${req.auth!.user.id}`,
       req.get("Idempotency-Key"),
       input,
       async (client) => {
+        await client.query("SELECT id FROM store WHERE id=$1 FOR UPDATE", [current.storeId]);
+        await assertCapacity(client, current.storeId, { units: input.quantity });
         const rows = [];
         for (let index = 0; index < input.quantity; index++) {
           const unitId = uuid();
@@ -186,11 +198,12 @@ export function registerCatalogRoutes(app: Express, db: Database) {
     if (entries.reduce((total, item) => total + item.quantity, 0) > 2000)
       throw new ApiError(400, "Import at most 2,000 physical units at once.");
     const storeId = await requireStore(db, req.auth!.user, req.body.storeId);
-    await assertCapacity(db, storeId, {
-      products: entries.length,
-      units: entries.reduce((total, item) => total + item.quantity, 0),
-    });
     const result = await db.transaction(async (client) => {
+      await client.query("SELECT id FROM store WHERE id=$1 FOR UPDATE", [storeId]);
+      await assertCapacity(client, storeId, {
+        products: entries.length,
+        units: entries.reduce((total, item) => total + item.quantity, 0),
+      });
       let units = 0;
       for (const entry of entries) {
         const productId = uuid();

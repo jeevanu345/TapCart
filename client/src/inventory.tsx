@@ -1,3 +1,6 @@
+import { AutocompleteInput } from "./autocomplete";
+import { Select } from "./select";
+import { NfcTools } from "./nfc";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -307,26 +310,26 @@ export function Inventory() {
               </button>
             )}
           </div>
-          <select
+          <Select
             aria-label="Filter category"
             value={category}
-            onChange={(event) => setCategory(event.target.value)}
+            onValueChange={(value) => setCategory(value)}
           >
             <option value="all">All categories</option>
             {categories.map((value) => (
               <option key={value}>{value}</option>
             ))}
-          </select>
-          <select
+          </Select>
+          <Select
             aria-label="Filter stock"
             value={stock}
-            onChange={(event) => setStock(event.target.value)}
+            onValueChange={(value) => setStock(value)}
           >
             <option value="all">All stock levels</option>
             <option value="available">Healthy stock</option>
             <option value="low">Low stock</option>
             <option value="out">Out of stock</option>
-          </select>
+          </Select>
           <Button variant="secondary" onClick={exportProducts} disabled={!filtered.length}>
             <Download size={15} />
             Export
@@ -498,20 +501,14 @@ export function Inventory() {
               </label>
               <label>
                 Category
-                <input
+                <AutocompleteInput
                   name="category"
                   aria-label="Category"
                   required
                   maxLength={80}
                   defaultValue={editing === "new" ? "" : editing.category}
-
-                  list="category-options"
+                  options={categories}
                 />
-                <datalist id="category-options">
-                  {categories.map((value) => (
-                    <option key={value}>{value}</option>
-                  ))}
-                </datalist>
               </label>
               <label>
                 Price (₹)
@@ -669,6 +666,7 @@ function UnitList({ product }: { product: Product }) {
   );
 }
 export function Tags() {
+  const [encoding, setEncoding] = useState<Unit | null>(null);
   const units = useData<Unit[]>("/units");
   const [query, setQuery] = useState("");
   const [history, setHistory] = useState<Unit | null>(null);
@@ -754,16 +752,16 @@ export function Tags() {
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
-          <select
+          <Select
             aria-label="Filter unit status"
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onValueChange={(value) => setStatus(value)}
           >
             <option value="AVAILABLE">Available units</option>
             <option value="RESERVED">Reserved units</option>
             <option value="SOLD">Sold units</option>
             <option value="all">All units</option>
-          </select>
+          </Select>
           <span className="muted">{selected.size} selected</span>
         </div>
         {units.loading && !units.data ? (
@@ -838,6 +836,9 @@ export function Tags() {
                           <Copy size={14} />
                           Copy link
                         </button>
+                        <Button variant="ghost" onClick={() => setEncoding(unit)}>
+                          Encode & measure
+                        </Button>
                         <button
                           className="icon-button"
                           aria-label={`History of ${unit.staffCode}`}
@@ -880,6 +881,16 @@ export function Tags() {
         Static NFC tags identify an inventory record. They do not prove a product is genuine, so use
         physical checks and tamper-evident labels.
       </p>
+      {encoding && (
+        <Modal
+          title={`Encode ${encoding.staffCode}`}
+          description={encoding.name}
+          className="nfc-dialog"
+          onClose={() => setEncoding(null)}
+        >
+          <NfcTools unitId={encoding.id} />
+        </Modal>
+      )}
       {history && <UnitHistory unit={history} onClose={() => setHistory(null)} />}
     </>
   );

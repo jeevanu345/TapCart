@@ -1,0 +1,24 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 43 and seed -8604632124967736762 with 2 workers on 10 cores with 3641MB heap and 64MB offheap memory [pid: 8071] (Mac OS X 27.2 aarch64, Eclipse Adoptium 21.0.13 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/jeevanu/Desktop/MYGITHUBPROJECTS/TapCart/research/formal/TapCart.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/Naturals.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/Sequences.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TapCart
+Starting... (2026-11-07 01:09:38)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-11-07 01:09:39.
+Model checking completed. No error has been found.
+  Estimates of the probability that TLC did not check all reachable states
+  because two distinct states had the same fingerprint:
+  calculated (optimistic):  val = 1.6E-10
+  based on the actual fingerprints:  val = 1.2E-10
+119986 states generated, 35279 distinct states found, 0 states left on queue.
+The depth of the complete state graph search is 15.
+The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 8 and the 95th percentile is 5).
+Finished in 00s at (2026-11-07 01:09:39)

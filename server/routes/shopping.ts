@@ -20,6 +20,7 @@ import {
 import { uuidValue, version, id, toResult, authorizeOrder, storeScope } from "./shared.js";
 import { createStripePayment } from "../stripe.js";
 import { createStripeRefund } from "../refunds.js";
+import { enforceTagPolicy } from "../nfc/authenticated.js";
 import { renderInvoice } from "../invoice.js";
 export function registerShoppingRoutes(app: Express, db: Database, options: AppOptions) {
   app.post("/api/orders/:id/card-payment", roles("CUSTOMER"), async (req, res) => {
@@ -34,7 +35,19 @@ export function registerShoppingRoutes(app: Express, db: Database, options: AppO
     res.json(await createStripeRefund(db, order.id));
   });
   app.post("/api/reservations", roles("CUSTOMER"), async (req, res) => {
-    const input = z.object({ unitId: uuidValue, version }).parse(req.body);
+    const input = z
+      .object({
+        unitId: uuidValue,
+        version,
+        tap: z
+          .object({
+            uid: z.string().regex(/^[A-Fa-f0-9]{14}$/),
+            counter: z.string().regex(/^[A-Fa-f0-9]{6}$/),
+            mac: z.string().regex(/^[A-Fa-f0-9]{16}$/),
+          })
+          .optional(),
+      })
+      .parse(req.body);
     toResult(
       res,
       await idempotent(
@@ -42,7 +55,10 @@ export function registerShoppingRoutes(app: Express, db: Database, options: AppO
         `reserve:${req.auth!.sessionId}`,
         req.get("Idempotency-Key"),
         input,
-        (client) => reserve(client, req.auth!, input),
+        async (client) => {
+          await enforceTagPolicy(client, input.unitId, input.tap);
+          return reserve(client, req.auth!, input);
+        },
       ),
     );
   });
@@ -78,6 +94,7 @@ export function registerShoppingRoutes(app: Express, db: Database, options: AppO
           .min(1)
           .max(30),
         method: z.enum(["DESK", "DEVELOPMENT", "CARD"]),
+        couponCode: z.string().trim().max(40).optional(),
       })
       .parse(req.body);
     if (input.method === "CARD" && !options.cardPayments)

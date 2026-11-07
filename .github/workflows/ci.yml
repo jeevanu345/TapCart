@@ -29,7 +29,14 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: .cache
+          key: tapcart-local-ai-v1-${{ runner.os }}
+      - run: npm run ai:models
       - run: npm run check
+        env:
+          AI_REQUIRE_MODELS: "true"
       - run: npx playwright install --with-deps chromium
       - run: npm run test:e2e
         env:

@@ -58,6 +58,8 @@ export interface OrderItem {
   name: string;
   sku: string;
   priceCents: number;
+  listPriceCents?: number;
+  discountCents?: number;
   reservationId: string;
   protectedVersion: number;
   saleEpoch: number;
@@ -71,6 +73,9 @@ export interface Order {
     "PAYMENT_PENDING" | "PAYMENT_FAILED" | "PAID" | "COMPLETED" | "REFUND_PENDING" | "REFUNDED";
   paymentMethod: "DESK" | "DEVELOPMENT" | "CARD";
   totalCents: number;
+  subtotalCents?: number;
+  discountCents?: number;
+  couponCode?: string | null;
   customerName: string;
   storeName: string;
   createdAt: string;

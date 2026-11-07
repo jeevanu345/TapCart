@@ -1,0 +1,8 @@
+
+ RUN  v4.1.12 /Users/jeevanu/Desktop/MYGITHUBPROJECTS/TapCart
+
+
+ Test Files  1 passed (1)
+      Tests  11 passed (11)
+   Start at  00:02:08
+   Duration  296ms (transform 45ms, setup 0ms, import 78ms, tests 147ms, environment 0ms)

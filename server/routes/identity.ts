@@ -17,6 +17,11 @@ import {
   verifyPassword,
 } from "../auth.js";
 import { authSchema, text, id } from "./shared.js";
+import {
+  createMfaLoginChallenge,
+  enqueueVerification,
+  transactionDatabase,
+} from "../security/service.js";
 export function registerIdentityRoutes(app: Express, db: Database, options: AppOptions) {
   app.get("/api/auth/session", (req, res) =>
     res.json({
@@ -34,15 +39,28 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
   });
   app.post("/api/auth/login", authLimit, async (req, res) => {
     const input = authSchema.parse(req.body);
-    const row = (await db.query("SELECT * FROM app_user WHERE email=$1", [input.email])).rows[0];
-    if (!row || !(await verifyPassword(input.password, row.password_hash)))
-      throw new ApiError(401, "Email or password is incorrect.");
-    if (req.cookies[sessionCookie])
-      await db.query(
-        "DELETE FROM session WHERE token_hash=$1 AND NOT EXISTS(SELECT 1 FROM inventory_unit WHERE owner_session_id=session.id) AND NOT EXISTS(SELECT 1 FROM customer_order WHERE owner_session_id=session.id)",
-        [tokenHash(req.cookies[sessionCookie])],
-      );
-    const csrfToken = await createSession(db, row.id, res, options.production);
+    const result = await db.transaction(async (client) => {
+      const row = (
+        await client.query("SELECT * FROM app_user WHERE email=$1 FOR UPDATE", [input.email])
+      ).rows[0];
+      if (!row || !(await verifyPassword(input.password, row.password_hash)))
+        throw new ApiError(401, "Email or password is incorrect.");
+      const connection = transactionDatabase(db, client);
+      const challenge = await createMfaLoginChallenge(connection, row.id);
+      if (challenge) return { row, challenge, csrfToken: "" };
+      if (req.cookies[sessionCookie])
+        await client.query(
+          "DELETE FROM session WHERE token_hash=$1 AND NOT EXISTS(SELECT 1 FROM inventory_unit WHERE owner_session_id=session.id) AND NOT EXISTS(SELECT 1 FROM customer_order WHERE owner_session_id=session.id)",
+          [tokenHash(req.cookies[sessionCookie])],
+        );
+      const csrfToken = await createSession(connection, row.id, res, options.production);
+      return { row, challenge: null, csrfToken };
+    });
+    if (result.challenge) {
+      res.json(result.challenge);
+      return;
+    }
+    const { row, csrfToken } = result;
     const store = (
       await db.query(
         "SELECT s.id,CASE WHEN s.owner_id=$1 THEN 'OWNER' ELSE m.role END AS store_role FROM store s LEFT JOIN store_member m ON m.store_id=s.id AND m.user_id=$1 WHERE s.owner_id=$1 OR m.user_id=$1",
@@ -88,6 +106,7 @@ export function registerIdentityRoutes(app: Express, db: Database, options: AppO
           "INSERT INTO store(id,owner_id,name,address,status) VALUES($1,$2,$3,$4,'PENDING')",
           [storeId, userId, input.storeName, input.address || ""],
         );
+      await enqueueVerification(transactionDatabase(db, client), userId, options.origin);
     });
     const csrfToken = await createSession(db, userId, res, options.production);
     res.status(201).json({

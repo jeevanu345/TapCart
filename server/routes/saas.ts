@@ -11,12 +11,14 @@ import { planById, type PlanId } from "../plans.js";
 import { event, publicUnit, unitSelect } from "../protocol.js";
 import type { AppOptions } from "../types.js";
 import { authSchema, id, storeScope, text } from "./shared.js";
+import { enqueueTeamInvite } from "../notifications/service.js";
+import { enqueueVerification, transactionDatabase } from "../security/service.js";
 
 const plan = z.enum(["STARTER", "GROWTH", "SCALE"]);
 const memberRole = z.enum(["MANAGER", "STAFF"]);
 const inviteHash = (token: string) => createHash("sha256").update(token).digest("hex");
 
-export async function usage(db: Database, storeId: string) {
+export async function usage(db: Pick<Database, "query">, storeId: string) {
   const row = (
     await db.query(
       `SELECT (SELECT count(*)::int FROM product WHERE store_id=$1 AND active) AS products,
@@ -31,7 +33,7 @@ export async function usage(db: Database, storeId: string) {
 }
 /** Rejects a growth action that would pass the store's plan limit. Existing data is never touched. */
 export async function assertCapacity(
-  db: Database,
+  db: Pick<Database, "query">,
   storeId: string,
   add: { products?: number; units?: number; seats?: number },
 ) {
@@ -60,13 +62,18 @@ function requireManager(req: Request) {
 }
 const activitySql = `SELECT o.id,o.event_type,o.aggregate_id,o.created_at,o.payload,
   COALESCE(un.staff_code,'') AS unit_code,COALESCE(p.name,pr.name,'') AS product_name,co.total_cents,
-  COALESCE(un.store_id,co.store_id,pr.store_id,st.id) AS store_id
+  COALESCE(un.store_id,co.store_id,pr.store_id,st.id,su.store_id,po.store_id,pd.store_id,cp.store_id,payload_store.id) AS store_id
   FROM outbox o
   LEFT JOIN inventory_unit un ON un.id=o.aggregate_id
   LEFT JOIN product p ON p.id=un.product_id
   LEFT JOIN customer_order co ON co.id=o.aggregate_id
   LEFT JOIN product pr ON pr.id=o.aggregate_id
-  LEFT JOIN store st ON st.id=o.aggregate_id`;
+  LEFT JOIN store st ON st.id=o.aggregate_id
+  LEFT JOIN supplier su ON su.id=o.aggregate_id
+  LEFT JOIN purchase_order po ON po.id=o.aggregate_id
+  LEFT JOIN purchase_draft pd ON pd.id=o.aggregate_id
+  LEFT JOIN coupon cp ON cp.id=o.aggregate_id
+  LEFT JOIN store payload_store ON payload_store.id::text=o.payload->>'storeId'`;
 
 export function registerSaasRoutes(app: Express, db: Database, options: AppOptions) {
   const limited = rateLimit({
@@ -84,12 +91,21 @@ export function registerSaasRoutes(app: Express, db: Database, options: AppOptio
     const input = z
       .object({ current: z.string().min(1).max(128), next: z.string().min(12).max(128) })
       .parse(req.body);
-    const row = (
-      await db.query("SELECT password_hash FROM app_user WHERE id=$1", [req.auth!.user.id])
-    ).rows[0];
-    if (!(await verifyPassword(input.current, row.password_hash)))
-      throw new ApiError(400, "Your current password is incorrect.");
     await db.transaction(async (client) => {
+      // Serialize credential checks with reset, login and MFA completion before trusting loaded auth.
+      const row = (
+        await client.query("SELECT password_hash FROM app_user WHERE id=$1 FOR UPDATE", [
+          req.auth!.user.id,
+        ])
+      ).rows[0];
+      const session = await client.query(
+        "SELECT id FROM session WHERE id=$1 AND user_id=$2 AND expires_at>clock_timestamp() FOR UPDATE",
+        [req.auth!.sessionId, req.auth!.user.id],
+      );
+      if (!row || !session.rowCount)
+        throw new ApiError(401, "Your session expired. Sign in again.", "AUTH_REQUIRED");
+      if (!(await verifyPassword(input.current, row.password_hash)))
+        throw new ApiError(400, "Your current password is incorrect.");
       await client.query("UPDATE app_user SET password_hash=$2 WHERE id=$1", [
         req.auth!.user.id,
         await hashPassword(input.next),
@@ -97,6 +113,18 @@ export function registerSaasRoutes(app: Express, db: Database, options: AppOptio
       await client.query(
         "UPDATE session SET expires_at=now() WHERE user_id=$1 AND id<>$2 AND expires_at>now()",
         [req.auth!.user.id, req.auth!.sessionId],
+      );
+      await client.query(
+        "UPDATE mfa_challenge SET used_at=now() WHERE user_id=$1 AND used_at IS NULL",
+        [req.auth!.user.id],
+      );
+      await client.query(
+        "UPDATE account_mfa SET pending_ciphertext=NULL,pending_expires_at=NULL WHERE user_id=$1 AND enabled_at IS NULL",
+        [req.auth!.user.id],
+      );
+      await client.query(
+        "UPDATE account_token SET used_at=now() WHERE user_id=$1 AND purpose='RESET_PASSWORD' AND used_at IS NULL",
+        [req.auth!.user.id],
       );
     });
     res.json({ ok: true });
@@ -200,12 +228,19 @@ export function registerSaasRoutes(app: Express, db: Database, options: AppOptio
         "INSERT INTO store_invite(id,store_id,token_hash,role,email,created_by,expires_at) VALUES($1,$2,$3,$4,$5,$6,now()+interval '7 days')",
         [inviteId, storeId, inviteHash(token), input.role, input.email, req.auth!.user.id],
       );
+      await enqueueTeamInvite(client, {
+        id: inviteId,
+        storeId,
+        email: input.email,
+        token,
+        origin: options.origin,
+      });
       await event(client, "TeamInviteCreated", storeId, {
         role: input.role,
         by: req.auth!.user.name,
       });
     });
-    // The raw token exists only in this response; only its hash is stored.
+    // The token is hashed for redemption and encrypted in the durable email queue.
     res.status(201).json({ id: inviteId, token, role: input.role, email: input.email });
   });
   app.delete("/api/team/invites/:id", roles("STORE"), async (req, res) => {
@@ -273,6 +308,7 @@ export function registerSaasRoutes(app: Express, db: Database, options: AppOptio
         row.role,
       ]);
       await event(client, "TeamMemberJoined", row.store_id, { name: input.name, role: row.role });
+      await enqueueVerification(transactionDatabase(db, client), userId, options.origin);
       return row;
     });
     const csrfToken = await createSession(db, userId, res, options.production);

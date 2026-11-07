@@ -149,7 +149,7 @@ export async function seedDevelopment(db: Database): Promise<void> {
       const productId = uuid();
       products.push({ id: productId, sku, name, price });
       await client.query(
-        "INSERT INTO product(id,store_id,sku,name,category,price_cents,description,image_url) VALUES($1,$2,$3,$4,$5,$6,$7,$8)",
+        `INSERT INTO product(id,store_id,sku,name,category,price_cents,description,image_url,created_at) VALUES($1,$2,$3,$4,$5,$6,$7,$8,now()-interval '35 days')`,
         [productId, store, sku, name, category, price, description, image],
       );
       const quantity = sku === "TEA-11" ? 3 : sku === "HON-07" ? 4 : 12;

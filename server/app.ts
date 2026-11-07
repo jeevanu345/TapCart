@@ -16,6 +16,10 @@ import { registerShoppingRoutes } from "./routes/shopping.js";
 import { registerReportingRoutes } from "./routes/reporting.js";
 import { registerSaasRoutes } from "./routes/saas.js";
 import { createStripeWebhook } from "./stripe.js";
+import { registerSecurityRoutes } from "./routes/security.js";
+import { registerCommerceRoutes } from "./routes/commerce.js";
+import { registerNfcRoutes } from "./routes/nfc.js";
+import { registerIntelligenceRoutes } from "./intelligence/routes.js";
 import { randomUUID } from "node:crypto";
 import { logger } from "./logger.js";
 
@@ -90,6 +94,10 @@ export function createApp(db: Database, options: AppOptions) {
     next();
   });
   registerIdentityRoutes(app, db, options);
+  registerSecurityRoutes(app, db, options);
+  registerCommerceRoutes(app, db, options);
+  registerNfcRoutes(app, db, options);
+  registerIntelligenceRoutes(app, db);
   registerCatalogRoutes(app, db);
   registerShoppingRoutes(app, db, options);
   registerReportingRoutes(app, db);
@@ -124,6 +132,10 @@ export function createApp(db: Database, options: AppOptions) {
     }
     if (databaseError.type === "entity.parse.failed") {
       res.status(400).json({ error: "The request body is not valid JSON." });
+      return;
+    }
+    if (databaseError.code === "LIMIT_FILE_SIZE") {
+      res.status(413).json({ error: "Files must be 8 MB or smaller." });
       return;
     }
     if (databaseError.type === "entity.too.large") {

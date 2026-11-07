@@ -1,3 +1,5 @@
+import { Select } from "./select";
+import { tapProof, unitLink } from "./nfc-proof";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -16,6 +18,7 @@ import {
   Trash2,
 } from "lucide-react";
 import {
+  api,
   date,
   message,
   money,
@@ -52,19 +55,6 @@ interface NFCReader extends EventTarget {
 interface NFCConstructor {
   new (): NFCReader;
 }
-function unitIdFromInput(input: string) {
-  const trimmed = input.trim();
-  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(trimmed))
-    return trimmed;
-  const url = new URL(trimmed, window.location.origin);
-  if (url.origin !== window.location.origin)
-    throw new Error(
-      "This link belongs to another store platform. Use a TapCart unit link from this site.",
-    );
-  const match = /^\/u\/([0-9a-f-]{36})$/i.exec(url.pathname);
-  if (!match) throw new Error("Enter an NFC link ending in /u/ followed by the unit ID.");
-  return match[1];
-}
 function ShopperHeader({ count = 0 }: { count?: number }) {
   const { user, refresh } = useAuth();
   const navigate = useNavigate();
@@ -78,6 +68,9 @@ function ShopperHeader({ count = 0 }: { count?: number }) {
         <ThemeToggle />
         {user ? (
           <>
+            <Link className="text-button" to="/account/security">
+              Account security
+            </Link>
             <span className="shopper-name">{user.name.split(" ")[0]}</span>
             {user.role !== "CUSTOMER" && (
               <Link className="text-button" to={homeFor(user)}>
@@ -125,6 +118,30 @@ export function Shopper() {
   const history = useData<Order[]>(user?.role === "CUSTOMER" ? "/orders" : null);
   const [storeId, setStoreId] = useState("all");
   const [query, setQuery] = useState("");
+  const [semantic, setSemantic] = useState<{
+    query: string;
+    storeId: string;
+    mode: string;
+    ids: string[];
+  } | null>(null);
+  const [searchBusy, setSearchBusy] = useState(false),
+    [searchError, setSearchError] = useState("");
+  async function searchMeaning(event: FormEvent) {
+    event.preventDefault();
+    if (storeId === "all" || !query.trim()) return;
+    setSearchBusy(true);
+    setSearchError("");
+    try {
+      const result = await api<{ mode: string; results: { id: string }[] }>(
+        `/catalog/search?storeId=${encodeURIComponent(storeId)}&q=${encodeURIComponent(query)}`,
+      );
+      setSemantic({ query, storeId, mode: result.mode, ids: result.results.map((p) => p.id) });
+    } catch (e) {
+      setSearchError(message(e));
+    } finally {
+      setSearchBusy(false);
+    }
+  }
   const [scanModal, setScanModal] = useState(false);
   const [preview, setPreview] = useState<Product | null>(null);
   const [error, setError] = useState("");
@@ -142,7 +159,9 @@ export function Shopper() {
   const list = (products.data || []).filter(
     (product) =>
       (storeId === "all" || product.storeId === storeId) &&
-      `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase()),
+      (semantic?.query === query && semantic.storeId === storeId
+        ? semantic.ids.includes(product.id)
+        : `${product.name} ${product.category}`.toLowerCase().includes(query.toLowerCase())),
   );
   const items = cart.data || [];
   const total = items.reduce((sum, item) => sum + item.priceCents, 0);
@@ -189,10 +208,10 @@ export function Shopper() {
           <section className="shopper-catalog">
             <div className="catalog-heading">
               <h2>Browse</h2>
-              <select
+              <Select
                 value={storeId}
                 aria-label="Browse store"
-                onChange={(event) => setStoreId(event.target.value)}
+                onValueChange={(value) => setStoreId(value)}
               >
                 <option value="all">All stores</option>
                 {stores.data
@@ -202,17 +221,35 @@ export function Shopper() {
                       {store.name}
                     </option>
                   ))}
-              </select>
+              </Select>
             </div>
-            <div className="search-field">
-              <Search size={17} />
-              <input
-                aria-label="Search the catalog"
-                placeholder="Search products"
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-              />
-            </div>
+            <form className="lab-search" onSubmit={searchMeaning}>
+              <div className="search-field">
+                <Search size={17} />
+                <input
+                  aria-label="Search the catalog"
+                  placeholder="Search products"
+                  value={query}
+                  onChange={(event) => setQuery(event.target.value)}
+                />
+              </div>
+              <Button
+                type="submit"
+                variant="secondary"
+                busy={searchBusy}
+                disabled={storeId === "all" || !query.trim()}
+              >
+                Search by meaning
+              </Button>
+            </form>
+            <p className="quiet-note">
+              {storeId === "all"
+                ? "Choose a store to search by meaning, for example “coffee under ₹500”."
+                : semantic?.query === query && semantic.storeId === storeId
+                  ? `Search mode: ${semantic.mode}`
+                  : "Try a request such as “coffee under ₹500”."}
+            </p>
+            {searchError && <ErrorState error={searchError} />}
             {products.loading && !products.data ? (
               <Loading />
             ) : products.error ? (
@@ -438,9 +475,9 @@ function ScanInput({ onClose }: { onClose: () => void }) {
   useEffect(() => () => abort.current?.abort(), []);
   function open(value: string) {
     try {
-      const id = unitIdFromInput(value);
+      const link = unitLink(value, window.location.origin);
       onClose();
-      navigate(`/u/${id}`);
+      navigate(link);
     } catch (e) {
       setError(message(e));
     }
@@ -577,6 +614,7 @@ export function Scan() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const unit = useData<Unit>(`/units/${id}`);
+  const tap = tapProof(new URL(window.location.href));
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const key = useRef(crypto.randomUUID());
@@ -588,7 +626,7 @@ export function Scan() {
     try {
       await write<Unit>(
         "/reservations",
-        { unitId: unit.data.id, version: unit.data.version },
+        { unitId: unit.data.id, version: unit.data.version, ...(tap ? { tap } : {}) },
         "POST",
         key.current,
       );
@@ -640,7 +678,7 @@ export function Scan() {
               {error && <ErrorState error={error} />}{" "}
               {!user ? (
                 <Link
-                  to={`/login?returnTo=${encodeURIComponent(`/u/${id}`)}`}
+                  to={`/login?returnTo=${encodeURIComponent(`/u/${id}${window.location.search}`)}`}
                   className="button primary"
                 >
                   Sign in to reserve
@@ -694,6 +732,14 @@ function Checkout({
 }) {
   const [method, setMethod] = useState<"DESK" | "DEVELOPMENT" | "CARD">("DESK");
   const [capabilities, setCapabilities] = useState<Session | null>(null);
+  const [couponCode, setCouponCode] = useState("");
+  const [pricing, setPricing] = useState<{
+    subtotalCents: number;
+    discountCents: number;
+    totalCents: number;
+    couponCode: string | null;
+  } | null>(null);
+  const [quoting, setQuoting] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const key = useRef(crypto.randomUUID());
@@ -702,6 +748,28 @@ function Checkout({
       .then((value) => setCapabilities(value))
       .catch((e: unknown) => setError(message(e)));
   }, []);
+  async function quote() {
+    setQuoting(true);
+    setError("");
+    setPricing(null);
+    try {
+      const quoted = await write<{
+        subtotalCents: number;
+        discountCents: number;
+        totalCents: number;
+        couponCode: string | null;
+      }>("/coupons/quote", {
+        unitIds: items.map((item) => item.id),
+        couponCode: couponCode.trim() || undefined,
+      });
+      setPricing(quoted);
+      if (quoted.totalCents === 0) setMethod("DESK");
+    } catch (e) {
+      setError(message(e));
+    } finally {
+      setQuoting(false);
+    }
+  }
   async function submit(event: FormEvent) {
     event.preventDefault();
     setBusy(true);
@@ -716,6 +784,7 @@ function Checkout({
             version: unit.version,
           })),
           method,
+          couponCode: pricing?.couponCode || undefined,
         },
         "POST",
         key.current,
@@ -745,6 +814,34 @@ function Checkout({
             </div>
           ))}
         </div>
+        <label>
+          Coupon code
+          <input
+            value={couponCode}
+            disabled={busy || quoting}
+            maxLength={40}
+            onChange={(event) => {
+              setCouponCode(event.target.value);
+              setPricing(null);
+              key.current = crypto.randomUUID();
+            }}
+            placeholder="Enter a store coupon"
+          />
+        </label>
+        <Button
+          variant="secondary"
+          busy={quoting}
+          disabled={busy || !couponCode.trim()}
+          onClick={quote}
+        >
+          Apply coupon
+        </Button>
+        {pricing?.couponCode && (
+          <p>
+            {pricing.couponCode}: {money(pricing.discountCents)} discount on{" "}
+            {money(pricing.subtotalCents)}.
+          </p>
+        )}
         <fieldset className="payment-options">
           <legend>Payment method</legend>
           <label className={method === "DESK" ? "selected" : ""}>
@@ -761,22 +858,23 @@ function Checkout({
               <small>Your store team confirms payment after you pay.</small>
             </span>
           </label>
-          {capabilities?.cardPayments && items.some((item) => item.priceCents > 0) && (
-            <label className={method === "CARD" ? "selected" : ""}>
-              <input
-                type="radio"
-                name="method"
-                value="CARD"
-                checked={method === "CARD"}
-                onChange={() => setMethod("CARD")}
-              />
-              <CreditCard size={18} />
-              <span>
-                <strong>Pay securely by card</strong>
-                <small>Continue to our payment provider after placing the order.</small>
-              </span>
-            </label>
-          )}
+          {capabilities?.cardPayments &&
+            (pricing?.totalCents ?? items.reduce((sum, item) => sum + item.priceCents, 0)) > 0 && (
+              <label className={method === "CARD" ? "selected" : ""}>
+                <input
+                  type="radio"
+                  name="method"
+                  value="CARD"
+                  checked={method === "CARD"}
+                  onChange={() => setMethod("CARD")}
+                />
+                <CreditCard size={18} />
+                <span>
+                  <strong>Pay securely by card</strong>
+                  <small>Continue to our payment provider after placing the order.</small>
+                </span>
+              </label>
+            )}
           {capabilities?.developmentPayments && (
             <label className={method === "DEVELOPMENT" ? "selected" : ""}>
               <input
@@ -796,14 +894,20 @@ function Checkout({
         </fieldset>
         <div className="order-total">
           <span>Total payable</span>
-          <strong>{money(items.reduce((sum, unit) => sum + unit.priceCents, 0))}</strong>
+          <strong>
+            {money(pricing?.totalCents ?? items.reduce((sum, unit) => sum + unit.priceCents, 0))}
+          </strong>
         </div>
         <p className="form-hint">
           Availability and prices are checked again when you place this order. Your items stay
           protected while payment is pending.
         </p>
         {error && <ErrorState error={error} />}
-        <Button type="submit" busy={busy} disabled={!items.length}>
+        <Button
+          type="submit"
+          busy={busy}
+          disabled={!items.length || quoting || (!!couponCode.trim() && !pricing)}
+        >
           Place order
           <ArrowRight size={16} />
         </Button>

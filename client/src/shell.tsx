@@ -48,6 +48,7 @@ const storeNav: { label: string; items: NavItem[] }[] = [
       { to: "/store/overview", label: "Overview", icon: LayoutDashboard },
       { to: "/store/desk", label: "Desk", icon: MonitorCheck },
       { to: "/store/orders", label: "Orders", icon: ShoppingBag },
+      { to: "/store/reconciliation", label: "Reconciliation", icon: MonitorCheck },
     ],
   },
   {
@@ -55,6 +56,9 @@ const storeNav: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/store/inventory", label: "Inventory", icon: Package },
       { to: "/store/tags", label: "Tag studio", icon: Radio },
+      { to: "/store/suppliers", label: "Suppliers", icon: Users },
+      { to: "/store/purchases", label: "Purchasing", icon: ShoppingCart },
+      { to: "/store/coupons", label: "Coupons", icon: ShoppingBag },
     ],
   },
   {
@@ -62,7 +66,9 @@ const storeNav: { label: string; items: NavItem[] }[] = [
     items: [
       { to: "/store/reports", label: "Reports", icon: BarChart3 },
       { to: "/store/customers", label: "Customers", icon: Users },
-      { to: "/store/intelligence", label: "Intelligence", icon: Sparkles },
+
+      { to: "/store/intelligence/lab", label: "Intelligence lab", icon: Search },
+      { to: "/store/security", label: "Security & delivery", icon: SettingsIcon },
       { to: "/store/activity", label: "Activity", icon: ActivityIcon },
     ],
   },
@@ -74,6 +80,8 @@ const adminNav: { label: string; items: NavItem[] }[] = [
       { to: "/admin", label: "Stores", icon: LayoutDashboard },
       { to: "/admin/users", label: "Accounts", icon: Users },
       { to: "/admin/activity", label: "Activity", icon: ActivityIcon },
+      { to: "/admin/security", label: "Security & delivery", icon: SettingsIcon },
+      { to: "/admin/intelligence", label: "Intelligence lab", icon: Sparkles },
     ],
   },
 ];
@@ -322,7 +330,7 @@ function UserMenu({ onLogout, settingsPath }: { onLogout: () => void; settingsPa
     <div className="popover-anchor" ref={ref}>
       <button
         className="avatar small avatar-button"
-        aria-label="Account menu"
+        aria-label={`Account menu, ${user?.name.slice(0, 2).toUpperCase()}`}
         aria-expanded={open}
         onClick={() => setOpen(!open)}
       >

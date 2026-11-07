@@ -6,6 +6,7 @@ import type { Database } from "./db.js";
 import { json } from "./db.js";
 import type { Auth, Order } from "./types.js";
 import { ApiError, conflict } from "./errors.js";
+import { preparePricing, claimPricing } from "./commerce/pricing.js";
 
 export interface MutationResult {
   status: number;
@@ -178,6 +179,7 @@ export async function release(
 export interface CheckoutInput {
   items: { unitId: string; reservationId: string; version: number }[];
   method: "DESK" | "DEVELOPMENT" | "CARD";
+  couponCode?: string;
 }
 export async function getOrder(client: Pick<Database, "query">, id: string): Promise<Order> {
   const row = (
@@ -189,7 +191,7 @@ export async function getOrder(client: Pick<Database, "query">, id: string): Pro
   if (!row) throw new ApiError(404, "Order not found.");
   const items = (
     await client.query(
-      "SELECT unit_id,product_id,name,sku,price_cents,reservation_id,protected_version,sale_epoch,returned_at FROM order_unit WHERE order_id=$1 ORDER BY name,unit_id",
+      "SELECT unit_id,product_id,name,sku,price_cents,list_price_cents,discount_cents,reservation_id,protected_version,sale_epoch,returned_at FROM order_unit WHERE order_id=$1 ORDER BY name,unit_id",
       [id],
     )
   ).rows;
@@ -200,6 +202,9 @@ export async function getOrder(client: Pick<Database, "query">, id: string): Pro
     status: row.status,
     paymentMethod: row.payment_method,
     totalCents: row.total_cents,
+    subtotalCents: row.subtotal_cents ?? row.total_cents,
+    discountCents: row.discount_cents,
+    couponCode: row.coupon_code,
     customerName: row.customer_name,
     storeName: row.store_name,
     createdAt: row.created_at.toISOString(),
@@ -214,6 +219,8 @@ export async function getOrder(client: Pick<Database, "query">, id: string): Pro
       name: item.name,
       sku: item.sku,
       priceCents: item.price_cents,
+      listPriceCents: item.list_price_cents ?? item.price_cents,
+      discountCents: item.discount_cents,
       reservationId: item.reservation_id,
       protectedVersion: Number(item.protected_version),
       saleEpoch: item.sale_epoch,
@@ -239,15 +246,27 @@ export async function checkout(
   const storeIds = new Set(rows.map((row) => row.store_id));
   if (storeIds.size !== 1) throw new ApiError(400, "Check out one store at a time.");
   const id = uuid(),
-    total = rows.reduce((sum, row) => sum + row.price_cents, 0);
+    pricing = await preparePricing(client, auth, rows, input.couponCode),
+    total = pricing.totalCents;
   if (input.method === "CARD" && total === 0)
     throw new ApiError(400, "Use desk checkout for a zero-value order.");
   if (!Number.isSafeInteger(total) || total > 2_147_483_647)
     throw new ApiError(400, "The order total exceeds the supported checkout limit.");
   await client.query(
-    "INSERT INTO customer_order(id,user_id,owner_session_id,store_id,status,payment_method,total_cents) VALUES($1,$2,$3,$4,'PAYMENT_PENDING',$5,$6)",
-    [id, auth.user.id, auth.sessionId, rows[0].store_id, input.method, total],
+    "INSERT INTO customer_order(id,user_id,owner_session_id,store_id,status,payment_method,total_cents,subtotal_cents,discount_cents,coupon_code) VALUES($1,$2,$3,$4,'PAYMENT_PENDING',$5,$6,$7,$8,$9)",
+    [
+      id,
+      auth.user.id,
+      auth.sessionId,
+      rows[0].store_id,
+      input.method,
+      total,
+      pricing.subtotalCents,
+      pricing.discountCents,
+      pricing.couponCode,
+    ],
   );
+  await claimPricing(client, auth, id, pricing);
   for (const item of items) {
     const protectedUnit = (
       await client.query(
@@ -262,8 +281,9 @@ export async function checkout(
         "A cart unit expired, changed, or already belongs to a checkout. Refresh your cart.",
       );
     const product = rows.find((row) => row.id === item.unitId)!;
+    const itemPricing = pricing.items.find((row) => row.unitId === item.unitId)!;
     await client.query(
-      `INSERT INTO order_unit(order_id,unit_id,product_id,reservation_id,protected_version,sale_epoch,name,sku,price_cents) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+      `INSERT INTO order_unit(order_id,unit_id,product_id,reservation_id,protected_version,sale_epoch,name,sku,price_cents,list_price_cents,discount_cents) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
       [
         id,
         item.unitId,
@@ -273,12 +293,16 @@ export async function checkout(
         protectedUnit.sale_epoch,
         product.name,
         product.sku,
-        product.price_cents,
+        itemPricing.priceCents,
+        itemPricing.listPriceCents,
+        itemPricing.discountCents,
       ],
     );
   }
   await event(client, "CheckoutPrepared", id, {
     totalCents: total,
+    discountCents: pricing.discountCents,
+    couponCode: pricing.couponCode,
     paymentMethod: input.method,
     paymentIdempotencyKey: `order:${id}`,
   });

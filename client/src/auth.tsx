@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { message, write } from "./api";
+import { MfaLoginForm } from "./security";
 import { homeFor, useAuth } from "./App";
 import { Button, ErrorState, Logo, LogoMark, ThemeToggle } from "./ui";
 export function AuthFrame({ children }: { children: React.ReactNode }) {
@@ -64,6 +65,7 @@ export function AuthPage({ register = false }: { register?: boolean }) {
   const location = useLocation();
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
+  const [challengeToken, setChallengeToken] = useState("");
   const params = new URLSearchParams(location.search);
   const [role, setRole] = useState<"STORE" | "CUSTOMER">("STORE");
   const requested = params.get("returnTo");
@@ -85,7 +87,16 @@ export function AuthPage({ register = false }: { register?: boolean }) {
             ? { storeName: form.get("storeName"), address: form.get("address") }
             : {}),
         });
-      else await write("/auth/login", { email: form.get("email"), password: form.get("password") });
+      else {
+        const result = await write<{ mfaRequired?: boolean; challengeToken?: string }>(
+          "/auth/login",
+          { email: form.get("email"), password: form.get("password") },
+        );
+        if (result.mfaRequired && result.challengeToken) {
+          setChallengeToken(result.challengeToken);
+          return;
+        }
+      }
       const updated = await refresh();
       if (updated.user) navigate(returnTo || homeFor(updated.user));
       else setError("Please sign in again.");
@@ -103,54 +114,74 @@ export function AuthPage({ register = false }: { register?: boolean }) {
           ? "Stores are reviewed by an administrator before their workspace opens."
           : "Your store, your orders and every tagged unit."}
       </p>
-      <form onSubmit={submit} className="form-stack">
-        {register && (
-          <>
-            <div className="segmented" role="group" aria-label="Account type">
-              <button
-                type="button"
-                aria-pressed={role === "STORE"}
-                onClick={() => setRole("STORE")}
-              >
-                I run a store
-              </button>
-              <button
-                type="button"
-                aria-pressed={role === "CUSTOMER"}
-                onClick={() => setRole("CUSTOMER")}
-              >
-                I’m a shopper
-              </button>
-            </div>
-            <label>
-              Your name
-              <input name="name" autoComplete="name" required />
-            </label>
-          </>
-        )}
-        <label>
-          Email address
-          <input name="email" type="email" autoComplete="email" required />
-        </label>
-        <PasswordInput register={register} />
-        {register && role === "STORE" && (
-          <>
-            <label>
-              Store name
-              <input name="storeName" required />
-            </label>
-            <label>
-              Store address
-              <input name="address" required autoComplete="street-address" />
-            </label>
-          </>
-        )}
-        {error && <ErrorState error={error} />}
-        <Button busy={busy} type="submit">
-          {register ? "Create account" : "Sign in to your workspace"}
-          <ArrowRight size={16} />
-        </Button>
-      </form>
+      {challengeToken ? (
+        <>
+          <MfaLoginForm
+            challengeToken={challengeToken}
+            onComplete={async () => {
+              const updated = await refresh();
+              if (updated.user) navigate(returnTo || homeFor(updated.user));
+            }}
+          />
+          <Button variant="ghost" onClick={() => setChallengeToken("")}>
+            Use a different account
+          </Button>
+        </>
+      ) : (
+        <form onSubmit={submit} className="form-stack">
+          {register && (
+            <>
+              <div className="segmented" role="group" aria-label="Account type">
+                <button
+                  type="button"
+                  aria-pressed={role === "STORE"}
+                  onClick={() => setRole("STORE")}
+                >
+                  I run a store
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={role === "CUSTOMER"}
+                  onClick={() => setRole("CUSTOMER")}
+                >
+                  I’m a shopper
+                </button>
+              </div>
+              <label>
+                Your name
+                <input name="name" autoComplete="name" required />
+              </label>
+            </>
+          )}
+          <label>
+            Email address
+            <input name="email" type="email" autoComplete="email" required />
+          </label>
+          <PasswordInput register={register} />
+          {register && role === "STORE" && (
+            <>
+              <label>
+                Store name
+                <input name="storeName" required />
+              </label>
+              <label>
+                Store address
+                <input name="address" required autoComplete="street-address" />
+              </label>
+            </>
+          )}
+          {error && <ErrorState error={error} />}
+          <Button busy={busy} type="submit">
+            {register ? "Create account" : "Sign in to your workspace"}
+            <ArrowRight size={16} />
+          </Button>
+        </form>
+      )}
+      {!register && (
+        <p className="auth-switch">
+          <Link to="/forgot-password">Forgot your password?</Link>
+        </p>
+      )}
       <p className="auth-switch">
         {register ? "Already have an account?" : "New to TapCart?"}{" "}
         <Link

@@ -1,0 +1,105 @@
+TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
+Running breadth-first search Model-Checking with fp 47 and seed -2477883769109673690 with 2 workers on 10 cores with 3641MB heap and 64MB offheap memory [pid: 8088] (Mac OS X 27.2 aarch64, Eclipse Adoptium 21.0.13 x86_64, MSBDiskFPSet, DiskStateQueue).
+Parsing file /Users/jeevanu/Desktop/MYGITHUBPROJECTS/TapCart/research/formal/TapCart.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/Naturals.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/FiniteSets.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/Sequences.tla
+Parsing file /private/var/folders/sx/23243l6d7k355231jhyx66yh0000gn/T/TLC.tla
+Semantic processing of module Naturals
+Semantic processing of module Sequences
+Semantic processing of module FiniteSets
+Semantic processing of module TLC
+Semantic processing of module TapCart
+Starting... (2026-11-07 01:09:42)
+Computing initial states...
+Finished computing initial states: 1 distinct state generated at 2026-11-07 01:09:42.
+Error: Action property ProtectionIntegrity is violated.
+Error: The behavior up to this point is:
+State 1: <Initial predicate>
+/\ charges = [A1 |-> 0, A2 |-> 0, B1 |-> 0]
+/\ epoch = 0
+/\ steps = 0
+/\ binding = "NONE"
+/\ actor = "NONE"
+/\ state = "AVAILABLE"
+/\ protection = FALSE
+/\ observed = {0}
+/\ action = "Init"
+/\ version = 0
+/\ used = {}
+/\ expired = FALSE
+/\ processed = {}
+/\ rid = 0
+/\ orders = [ A1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"],
+  A2 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"],
+  B1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"] ]
+/\ sales = <<>>
+/\ owner = "NONE"
+
+State 2: <Next line 82, col 18 to line 82, col 78 of module TapCart>
+/\ charges = [A1 |-> 0, A2 |-> 0, B1 |-> 0]
+/\ epoch = 0
+/\ steps = 1
+/\ binding = "NONE"
+/\ actor = "A"
+/\ state = "RESERVED"
+/\ protection = FALSE
+/\ observed = {0, 1}
+/\ action = "Reserve"
+/\ version = 1
+/\ used = {1}
+/\ expired = FALSE
+/\ processed = {}
+/\ rid = 1
+/\ orders = [ A1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"],
+  A2 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"],
+  B1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"] ]
+/\ sales = <<>>
+/\ owner = "A"
+
+State 3: <Next line 84, col 13 to line 84, col 57 of module TapCart>
+/\ charges = [A1 |-> 0, A2 |-> 0, B1 |-> 0]
+/\ epoch = 0
+/\ steps = 2
+/\ binding = "A1"
+/\ actor = "A"
+/\ state = "RESERVED"
+/\ protection = TRUE
+/\ observed = {0, 1, 2}
+/\ action = "Checkout"
+/\ version = 2
+/\ used = {1}
+/\ expired = FALSE
+/\ processed = {}
+/\ rid = 1
+/\ orders = [ A1 |-> [rid |-> 1, version |-> 2, epoch |-> 0, status |-> "PENDING"],
+  A2 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"],
+  B1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"] ]
+/\ sales = <<>>
+/\ owner = "A"
+
+State 4: <Next line 84, col 13 to line 84, col 57 of module TapCart>
+/\ charges = [A1 |-> 0, A2 |-> 0, B1 |-> 0]
+/\ epoch = 0
+/\ steps = 3
+/\ binding = "A2"
+/\ actor = "A"
+/\ state = "RESERVED"
+/\ protection = TRUE
+/\ observed = {0, 1, 2, 3}
+/\ action = "Checkout"
+/\ version = 3
+/\ used = {1}
+/\ expired = FALSE
+/\ processed = {}
+/\ rid = 1
+/\ orders = [ A1 |-> [rid |-> 1, version |-> 2, epoch |-> 0, status |-> "PENDING"],
+  A2 |-> [rid |-> 1, version |-> 3, epoch |-> 0, status |-> "PENDING"],
+  B1 |-> [rid |-> 0, version |-> 0, epoch |-> 0, status |-> "NEW"] ]
+/\ sales = <<>>
+/\ owner = "A"
+
+49 states generated, 43 distinct states found, 30 states left on queue.
+The depth of the complete state graph search is 5.
+The average outdegree of the complete state graph is 4 (minimum is 3, the maximum 5 and the 95th percentile is 5).
+Finished in 00s at (2026-11-07 01:09:42)

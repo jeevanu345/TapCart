@@ -1,3 +1,4 @@
+import { Select } from "./select";
 import { useEffect, useState, type FormEvent } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import {
@@ -297,10 +298,10 @@ export function Orders() {
               onChange={(event) => setQuery(event.target.value)}
             />
           </div>
-          <select
+          <Select
             aria-label="Filter order status"
             value={status}
-            onChange={(event) => setStatus(event.target.value)}
+            onValueChange={(value) => setStatus(value)}
           >
             <option value="all">All orders</option>
             <option value="PAYMENT_PENDING">Awaiting payment</option>
@@ -308,7 +309,7 @@ export function Orders() {
             <option value="PAYMENT_FAILED">Payment failed</option>
             <option value="REFUND_PENDING">Refund pending</option>
             <option value="REFUNDED">Refunded</option>
-          </select>
+          </Select>
         </div>
         {orders.loading && !orders.data ? (
           <Loading />

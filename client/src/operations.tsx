@@ -1,3 +1,4 @@
+import { Select } from "./select";
 import { lazy, Suspense, useState, type FormEvent } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import {
@@ -786,14 +787,14 @@ export function Admin({ users = false }: { users?: boolean }) {
                       <Status value={store.status} />
                     </td>
                     <td>
-                      <select
+                      <Select
                         aria-label={`Plan for ${store.name}`}
                         value={store.plan || "STARTER"}
                         disabled={busyId === store.id}
-                        onChange={(event) =>
+                        onValueChange={(value) =>
                           void mutate(
                             store,
-                            () => write(`/stores/${store.id}/plan`, { plan: event.target.value }),
+                            () => write(`/stores/${store.id}/plan`, { plan: value }),
                             `${store.name} plan updated.`,
                           )
                         }
@@ -803,7 +804,7 @@ export function Admin({ users = false }: { users?: boolean }) {
                             {plan.name}
                           </option>
                         ))}
-                      </select>
+                      </Select>
                       {store.planRequested && (
                         <small>Requested: {planById(store.planRequested).name}</small>
                       )}
